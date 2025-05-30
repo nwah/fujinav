@@ -24,7 +24,8 @@ int main() {
   ui_init();
 
   ui_screen_splash();
-  while(1){}
+  // while(1){}
+  cgetc();
 
   while (1) {
     switch (state) {
