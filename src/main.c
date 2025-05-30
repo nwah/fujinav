@@ -9,21 +9,30 @@
 #include "api.h"
 #include "globals.h"
 #include "check_settings.h"
+#include "edit_settings.h"
 #include "set_location.h"
 #include "set_route_options.h"
 #include "view_directions.h"
 #include "print_directions.h"
 #include "view_qr_code.h"
+#include "ui.h"
 
 char *version = "1.0.0";
 
 int main() {
   network_init();
+  ui_init();
+
+  ui_screen_splash();
+  while(1){}
 
   while (1) {
     switch (state) {
       case CHECK_SETTINGS:
         check_settings();
+        break;
+      case EDIT_SETTINGS:
+        edit_settings();
         break;
       case SET_DESTINATION:
         set_destination();

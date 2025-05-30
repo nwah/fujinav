@@ -1,6 +1,12 @@
 #ifndef TYPEDEFS_H
 #define TYPEDEFS_H
 
+#define APPKEY_CREATOR_ID 0x4E42
+#define APPKEY_APP_ID 0x02
+#define APPKEY_ID_API_URL 0x01
+#define APPKEY_ID_COUNTRY 0x02
+#define APPKEY_ID_UNITS 0x03
+
 #define KEY_ABORT 27
 
 #define ERR_OK 0
@@ -19,5 +25,10 @@ typedef enum _state
     VIEW_QR_CODE,
     DONE
 } State;
+
+typedef struct _settings
+{
+    char server[65];
+} Settings;
 
 #endif // TYPEDEFS_H

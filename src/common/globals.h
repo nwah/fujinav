@@ -4,6 +4,7 @@
 #include "typedefs.h"
 #include "api.h"
 
+extern Settings settings;
 extern State state;
 extern Location fromLoc;
 extern Location toLoc;

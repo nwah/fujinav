@@ -2,7 +2,9 @@
 #define UI_H
 
 #include "api.h"
+#include "globals.h"
 
+void ui_init(void);
 void ui_screen_splash();
 void ui_screen_settings();
 void ui_screen_destination();
