@@ -4,18 +4,26 @@
 #include <atari.h>
 // #include <conio.h>
 #include <peekpoke.h>
+#include <sys/types.h>
 #include "api.h"
 #include "util.h"
 #include "globals.h"
 #include "logo.c"
+#include "font.h"
+#include "ui.h"
+
 
 #define CH_NEWLINE 0x9B
-#define DISPLAY_LIST 0x0600              // Memory address to store DISPLAY_LIST.  0x0600 is the first address available for user space memory (1)
-#define DISPLAY_MEMORY 0x7400
+// #define DISPLAY_LIST   0x0600              // Memory address to store DISPLAY_LIST.  0x0600 is the first address available for user space memory (1)
+// #define PMG_MEMORY     0x2000
+// #define DISPLAY_MEMORY 0x7400
+#define PMBASE 0xD407
 
 uint8_t row = 0;
 uint8_t col = 0;
-unsigned char *cursor_ptr = (void*)(DISPLAY_MEMORY);
+unsigned char *cursor_ptr = scr_mem;
+unsigned char *font_ptr = 0;
+
 
 // const unsigned char logoData[640] = {
 //   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -55,19 +63,19 @@ const unsigned char logoData[640] = {
 
 void default_dlist = {
     DL_BLK8, DL_BLK8, DL_BLK8,
-    DL_LMS(DL_CHR40x8x1), DISPLAY_MEMORY,
+    DL_LMS(DL_CHR40x8x1), scr_mem,
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
-    DL_JVB, DISPLAY_LIST
+    DL_JVB, dlist_mem
 };
 
 void splash_dlist = {
     DL_BLK8, DL_BLK8, DL_BLK8,
-    DL_LMS(DL_CHR40x8x1), DISPLAY_MEMORY, // 1
+    DL_LMS(DL_CHR40x8x1), scr_mem, // 1
     DL_DLI(DL_LMS(DL_MAP160x2x4)), &logoData,
     DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, // 2
     DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, // 3
@@ -75,13 +83,13 @@ void splash_dlist = {
     DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, // 4
     DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4,
     DL_DLI(DL_MAP160x2x4), // 5
-    DL_LMS(DL_CHR40x8x1), DISPLAY_MEMORY + 40, // 6
+    DL_LMS(DL_CHR40x8x1), scr_mem + 40, // 6
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, // 10
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, // 14
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, // 18
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, // 22
     DL_CHR40x8x1, DL_CHR40x8x1, // 24
-    DL_JVB, DISPLAY_LIST
+    DL_JVB, dlist_mem
 };
 
 void dli_text(void);
@@ -108,22 +116,28 @@ void stop_dli(void)
 
 void screen_clear(void)
 {
-  memset(DISPLAY_MEMORY, 0, 40*24);
-}
+  memset(scr_mem, 0, 40*24); // TODO: smarter size calculation
+} 
 
 void screen_gotoxy(uint8_t x, uint8_t y)
 {
-  row = y;
   col = x;
-  cursor_ptr = DISPLAY_MEMORY + 40 * row + x;
+  row = y;
+  cursor_ptr = scr_mem + 40 * row + col; // TODO: Dynamic max column
 }
 
 void screen_newline() {
-  screen_gotoxy(0, row+1);
+  // TODO: wrap around to top? scroll? ignore?
+  cursor_ptr += 40 - col; // TODO: Dynamic max column
+  col = 0;
+  row++;
 }
 
 void screen_putc(char c)
 {
+  col++;
+  if (col > 39) // TODO: Dynamic max column
+    screen_newline();
   if (c == CH_NEWLINE)
     screen_newline();
   else if (c < 32)
@@ -138,6 +152,23 @@ void screen_puts(char *s) {
   char c;
   while ((c = *s++) != '\0')
     screen_putc(c);
+}
+
+void screen_hr(uint8_t length) {
+  screen_newline();
+  memset(cursor_ptr, SCR_ICON_HLINE, length);
+  screen_newline();
+}
+
+void screen_pm_draw_icon(uint8_t icon, uint8_t p, uint8_t y) {
+  uint8_t *src = font_ptr + icon * 8;
+  uint8_t *dst = pmg_mem + 0x200 + p * 128 + y;
+  memcpy(dst, src, 8);
+  // memcpy(pmg_mem + 40, font_ptr + 40, 24);
+}
+
+void screen_pm_clear_icon(uint8_t p, uint8_t y) {
+  memset(pmg_mem + 0x200 + p * 128 + y, 0, 8);
 }
 
 void dli_text(void)
@@ -177,24 +208,53 @@ void dli_logo_bottom(void)
 
 void set_dlist_default(void)
 {
-  memcpy((void *)DISPLAY_LIST, &default_dlist, sizeof(default_dlist));
+  memcpy((void *)dlist_mem, &default_dlist, sizeof(default_dlist));
 }
 
 void set_dlist_splash(void)
 {
-  memcpy((void *)DISPLAY_LIST, &splash_dlist, sizeof(splash_dlist));
+  memcpy((void *)dlist_mem, &splash_dlist, sizeof(splash_dlist));
+}
+
+void init_pmg(void) {
+  ANTIC.pmbase = (uint16_t)pmg_mem >> 8;
+
+  OS.pcolr0 = 0x96; // blue
+  OS.pcolr1 = 0x36; // red
+
+  GTIA_WRITE.hposp0 = 60;
+  GTIA_WRITE.hposp1 = 120;
+
+  // enable players
+  GTIA_WRITE.gractl = 3;
+
+  // enable single line PMG
+  // OS.sdmctl = 62;
+  OS.sdmctl = 46;
+
+  // Normal
+  OS.gprior = 1;
+  // OS.gprior = 1 + 32;
+
+  bzero(pmg_mem, 2048);
 }
 
 void ui_init(void)
 {
+  init_pmg();
+
+  patch_font();
+  font_ptr = PEEK(756) << 8;
+
+  bzero(scr_mem, 40*25);
+
   set_dlist_default();
-  OS.sdlst = (void *)DISPLAY_LIST;
+  OS.sdlst = (void *)dlist_mem;
 
   OS.color4 = 0x02;
   OS.color0 = 0x04;
   OS.color1 = 0x0E;
   OS.color2 = 0x02;
-  // video_ptr = (unsigned char *)(DISPLAY_MEMORY);
 }
 
 void ui_screen_splash() {
@@ -218,9 +278,22 @@ void ui_screen_splash() {
   wait_for_vblank();
   start_dli();
 
-  screen_gotoxy(20, 2);
-  screen_puts("Hello!");
+  screen_gotoxy(0, 2);
+  screen_putc(CH_ICON_WALK);
+  screen_putc(CH_ICON_CAR);
+  screen_putc(CH_ICON_BIKE);
+  screen_putc(CH_ICON_BUS);
+  screen_hr(40);
+  screen_putc(CH_ICON_RAIL);
+  screen_putc(CH_ICON_BOAT);
+  screen_putc(CH_ICON_MERGE);
+  screen_putc(CH_ICON_EXIT);
+  screen_hr(40);
+  screen_putc(CH_ICON_PLANE);
+  screen_putc(CH_ICON_SKATEBOARD);
 
+  screen_pm_draw_icon(SCR_ICON_PIN, 0, 40);
+  screen_pm_draw_icon(SCR_ICON_CAR, 1, 80);
 }
 
 void ui_screen_settings() {

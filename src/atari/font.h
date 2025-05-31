@@ -1,0 +1,64 @@
+#ifndef FONT_H
+#define FONT_H
+
+#define SCR_ICON_PIN 0 + 64
+#define SCR_ICON_SLIGHT_RIGHT 1 + 64
+#define SCR_ICON_CORNER_SE 3 + 64
+#define SCR_ICON_SLIGHT_LEFT 4 + 64
+#define SCR_ICON_CORNER_NE 5 + 64
+#define SCR_ICON_WALK 6 + 64
+#define SCR_ICON_CAR 7 + 64
+#define SCR_ICON_BIKE 8 + 64
+#define SCR_ICON_BUS 9 + 64
+#define SCR_ICON_RAIL 10 + 64
+#define SCR_ICON_BOAT 11 + 64
+#define SCR_ICON_MERGE 12 + 64
+#define SCR_ICON_EXIT 13 + 64
+#define SCR_ICON_PLANE 14 + 64
+#define SCR_ICON_SKATEBOARD 15 + 64
+#define SCR_ICON_CLOCK 16 + 64
+#define SCR_ICON_CORNER_NW 17 + 64
+#define SCR_ICON_HLINE 18 + 64
+#define SCR_ICON_BUILDING 20 + 64
+#define SCR_ICON_HOUSE 21 + 64
+#define SCR_ICON_VLINE 25 + 64
+#define SCR_ICON_CORNER_SW 26 + 64
+#define SCR_ICON_UP 28 + 64
+#define SCR_ICON_DOWN 29 + 64
+#define SCR_ICON_LEFT_TURN 30 + 64
+#define SCR_ICON_RIGHT_TURN 31 + 64
+#define SCR_ICON_CARET_LEFT 62 - 32
+#define SCR_ICON_CARET_RIGHT 63 - 32
+
+#define CH_ICON_PIN 0
+#define CH_ICON_SLIGHT_RIGHT 1
+#define CH_ICON_CORNER_SE 3
+#define CH_ICON_SLIGHT_LEFT 4
+#define CH_ICON_CORNER_NE 5
+#define CH_ICON_WALK 6
+#define CH_ICON_CAR 7
+#define CH_ICON_BIKE 8
+#define CH_ICON_BUS 9
+#define CH_ICON_RAIL 10
+#define CH_ICON_BOAT 11
+#define CH_ICON_MERGE 12
+#define CH_ICON_EXIT 13
+#define CH_ICON_PLANE 14
+#define CH_ICON_SKATEBOARD 15
+#define CH_ICON_CLOCK 16
+#define CH_ICON_CORNER_NW 17
+#define CH_ICON_HLINE 18
+#define CH_ICON_BUILDING 20
+#define CH_ICON_HOUSE 21
+#define CH_ICON_VLINE 25
+#define CH_ICON_CORNER_SW 26
+#define CH_ICON_UP 28
+#define CH_ICON_DOWN 29
+#define CH_ICON_LEFT_TURN 30
+#define CH_ICON_RIGHT_TURN 31
+#define CH_ICON_CARET_LEFT 62
+#define CH_ICON_CARET_RIGHT 63
+
+void patch_font(void);
+
+#endif

@@ -4,6 +4,10 @@
 #include "api.h"
 #include "globals.h"
 
+extern unsigned char dlist_mem[];
+extern unsigned char scr_mem[];
+extern unsigned char pmg_mem[];
+
 void ui_init(void);
 void ui_screen_splash();
 void ui_screen_settings();
