@@ -83,6 +83,7 @@ void set_destination(void)
     uint8_t err;
 
     ui_screen_destination();
+    ui_screen_destination_menu_default();
 
     err = get_loc(&toLoc);
     if (err != ERR_OK) {

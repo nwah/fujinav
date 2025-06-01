@@ -1,65 +1,29 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <atari.h>
-// #include <conio.h>
+#include <conio.h>
 #include <peekpoke.h>
 #include <sys/types.h>
 #include "api.h"
 #include "util.h"
 #include "globals.h"
-#include "logo.c"
 #include "font.h"
 #include "ui.h"
 
-
-#define CH_NEWLINE 0x9B
-// #define DISPLAY_LIST   0x0600              // Memory address to store DISPLAY_LIST.  0x0600 is the first address available for user space memory (1)
-// #define PMG_MEMORY     0x2000
-// #define DISPLAY_MEMORY 0x7400
-#define PMBASE 0xD407
+#define LINE_LENGTH 40
+#define KEY_BACKSPACE 0x08
+// #define KEY_ESC 0x1B
+// #define KEY_RETURN 0x9B
 
 uint8_t row = 0;
 uint8_t col = 0;
+uint8_t min_col = 0;
+uint8_t max_col = 39;
+
 unsigned char *cursor_ptr = scr_mem;
 unsigned char *font_ptr = 0;
-
-
-// const unsigned char logoData[640] = {
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7D, 0x5F, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFD, 0xAA, 0x95, 0x5F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEA, 0xAB, 0xEF, 0xFE, 0xFF, 0xBE, 0xFF, 0xBD, 0x9F, 0x7F, 0xEF, 0xFF, 0xEF, 0xFF, 0xBF, 0xEF, 0xFF, 0xEF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0xFF, 0xEF, 0xFE, 0xFF, 0xBE, 0xFF, 0xBF, 0xBF, 0x7F, 0xEB, 0xFF, 0xEF, 0xFF, 0xBF, 0xEF, 0xFF, 0xEF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0xFF, 0xEF, 0xFE, 0xFF, 0xBE, 0xFC, 0x3D, 0x9D, 0x5F, 0xEE, 0xFF, 0xEF, 0xFE, 0xEF, 0xFB, 0xFF, 0xBF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0xFF, 0xEF, 0xFE, 0xFF, 0xBE, 0xD0, 0x05, 0xAA, 0x95, 0xEE, 0xFF, 0xEF, 0xFE, 0xEF, 0xFB, 0xFF, 0xBF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0xFF, 0xEF, 0xFE, 0xFF, 0xBE, 0xF0, 0x0D, 0x5F, 0x9F, 0xEF, 0xBF, 0xEF, 0xFB, 0xFB, 0xFE, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEA, 0xAB, 0xEF, 0xFE, 0xFF, 0xBE, 0xFC, 0x3F, 0x7F, 0xBF, 0xEF, 0xEF, 0xEF, 0xFB, 0xFB, 0xFE, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0xFF, 0xEF, 0xFE, 0xFF, 0xBE, 0xFF, 0x7F, 0x7F, 0x0F, 0xEF, 0xFB, 0xEF, 0xFB, 0xFB, 0xFE, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0xFF, 0xEF, 0xFE, 0xFF, 0xBE, 0xF5, 0x55, 0x54, 0x01, 0xEF, 0xFE, 0xEF, 0xEA, 0xAA, 0xFF, 0xBB, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0xFF, 0xEF, 0xFE, 0xFF, 0xBE, 0xFF, 0x7F, 0x7C, 0x03, 0xEF, 0xFE, 0xEF, 0xEF, 0xFE, 0xFF, 0xBB, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0xFF, 0xFB, 0xFB, 0xFF, 0xBE, 0xFF, 0xFF, 0x7F, 0x0F, 0xEF, 0xFF, 0xAF, 0xBF, 0xFF, 0xBF, 0xEF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0xFF, 0xFE, 0xAF, 0xEA, 0xFE, 0xFF, 0xFD, 0x55, 0x7F, 0xEF, 0xFF, 0xEF, 0xBF, 0xFF, 0xBF, 0xEF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-//   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
-// };
-
-const unsigned char logoData[640] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65, 80, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 170, 149, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 168, 32, 2, 0, 130, 0, 129, 144, 64, 32, 0, 32, 0, 128, 32, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 32, 2, 0, 130, 0, 128, 128, 64, 40, 0, 32, 0, 128, 32, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 32, 2, 0, 130, 3, 193, 145, 80, 34, 0, 32, 2, 32, 8, 0, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 32, 2, 0, 130, 31, 245, 170, 149, 34, 0, 32, 2, 32, 8, 0, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 32, 2, 0, 130, 15, 241, 80, 144, 32, 128, 32, 8, 8, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 168, 32, 2, 0, 130, 3, 192, 64, 128, 32, 32, 32, 8, 8, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 32, 2, 0, 130, 0, 64, 64, 240, 32, 8, 32, 8, 8, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 32, 2, 0, 130, 5, 85, 87, 253, 32, 2, 32, 42, 170, 0, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 32, 2, 0, 130, 0, 64, 67, 252, 32, 2, 32, 32, 2, 0, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 8, 8, 0, 130, 0, 0, 64, 240, 32, 0, 160, 128, 0, 128, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 2, 160, 42, 2, 0, 1, 85, 64, 32, 0, 32, 128, 0, 128, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 void default_dlist = {
     DL_BLK8, DL_BLK8, DL_BLK8,
@@ -73,17 +37,17 @@ void default_dlist = {
     DL_JVB, dlist_mem
 };
 
-void splash_dlist = {
+void logo_with_text_dlist = {
     DL_BLK8, DL_BLK8, DL_BLK8,
     DL_LMS(DL_CHR40x8x1), scr_mem, // 1
-    DL_DLI(DL_LMS(DL_MAP160x2x4)), &logoData,
+    DL_DLI(DL_LMS(DL_MAP160x2x4)), &logo_data,
     DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, // 2
     DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, // 3
     DL_DLI(DL_MAP160x2x4),
     DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, // 4
     DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4,
     DL_DLI(DL_MAP160x2x4), // 5
-    DL_LMS(DL_CHR40x8x1), scr_mem + 40, // 6
+    DL_LMS(DL_CHR40x8x1), scr_mem + LINE_LENGTH, // 6
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, // 10
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, // 14
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, // 18
@@ -92,9 +56,52 @@ void splash_dlist = {
     DL_JVB, dlist_mem
 };
 
-void dli_text(void);
-void dli_logo_top(void);
-void dli_logo_bottom(void);
+void destination_dlist = {
+    DL_BLK8, DL_BLK8, DL_BLK8,
+    DL_LMS(DL_CHR40x8x1), scr_mem, // 1
+    DL_DLI(DL_LMS(DL_MAP160x2x4)), &logo_data,
+    DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4,                // 2
+    DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, // 3
+    DL_DLI(DL_MAP160x2x4),
+    DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, // 4
+    DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4,
+    DL_DLI(DL_MAP160x2x4),                       // 5
+    DL_LMS(DL_CHR40x8x1), scr_mem + LINE_LENGTH, // 6
+    DL_CHR40x8x1,
+    DL_DLI(DL_CHR40x8x1), DL_CHR40x8x1,
+    DL_DLI(DL_CHR40x8x1),
+    DL_CHR40x8x1, DL_CHR40x8x1, // 14
+    DL_DLI(DL_CHR40x8x1), DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,               // 18
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, // 22
+    DL_CHR40x8x1, DL_CHR40x8x1,                             // 24
+    DL_JVB, dlist_mem};
+
+void title_text_dlist = {
+    DL_BLK8, DL_BLK8,
+    DL_DLI(DL_BLK8),
+    DL_DLI(DL_LMS(DL_CHR20x16x2)), scr_mem,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 40,
+    DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_JVB, dlist_mem};
+
+void directions_dlist = {
+    DL_BLK8, DL_BLK8, DL_BLK8,
+    DL_LMS(DL_CHR40x8x1), scr_mem,
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 4 * 40,
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_JVB, dlist_mem
+};
 
 void wait_for_vblank(void)
 {
@@ -116,27 +123,63 @@ void stop_dli(void)
 
 void screen_clear(void)
 {
-  memset(scr_mem, 0, 40*24); // TODO: smarter size calculation
+  // row = 0;
+  // col = 0;
+  // cursor_ptr = scr_mem;
+  memset(scr_mem, 0, LINE_LENGTH * 24); // TODO: smarter size calculation
 } 
 
 void screen_gotoxy(uint8_t x, uint8_t y)
 {
   col = x;
   row = y;
-  cursor_ptr = scr_mem + 40 * row + col; // TODO: Dynamic max column
+  cursor_ptr = scr_mem + LINE_LENGTH * row + col; // TODO: Dynamic max column
+}
+
+void screen_set_margins(uint8_t left, uint8_t right)
+{
+  min_col = left;
+  max_col = LINE_LENGTH - 1 - right;
+}
+
+void screen_default_margins(void)
+{
+  screen_set_margins(1, 1);
 }
 
 void screen_newline() {
   // TODO: wrap around to top? scroll? ignore?
-  cursor_ptr += 40 - col; // TODO: Dynamic max column
-  col = 0;
+  cursor_ptr += LINE_LENGTH - col + min_col;
+  col = min_col;
   row++;
 }
+
+void screen_clear_line(uint8_t y) {
+  memset(scr_mem + y * LINE_LENGTH, 0, LINE_LENGTH);
+}
+
+// char screen_getkey(void)
+// {
+//   char c;
+//   POKE(764, 255);
+//   while ((c = PEEK(764)) == 255)
+//     ;
+  
+//   if (c > 127)
+//     c -= 127;
+  
+//   if (c < 65)
+//     return c - 64;
+//   else if (c < 95)
+//     return c;
+//   else
+//     return c - 32;
+// }
 
 void screen_putc(char c)
 {
   col++;
-  if (col > 39) // TODO: Dynamic max column
+  if (col > max_col)
     screen_newline();
   if (c == CH_NEWLINE)
     screen_newline();
@@ -152,6 +195,14 @@ void screen_puts(char *s) {
   char c;
   while ((c = *s++) != '\0')
     screen_putc(c);
+}
+
+void screen_puts_center(uint8_t y, char *s) {
+  uint8_t len = strlen(s);
+  uint8_t x = 0;
+  if (len < 39) x = (40 - len) / 2;
+  screen_gotoxy(x, y);
+  screen_puts(s);
 }
 
 void screen_hr(uint8_t length) {
@@ -170,6 +221,65 @@ void screen_pm_draw_icon(uint8_t icon, uint8_t p, uint8_t y) {
 void screen_pm_clear_icon(uint8_t p, uint8_t y) {
   memset(pmg_mem + 0x200 + p * 128 + y, 0, 8);
 }
+
+uint8_t screen_input_default(char *result, uint8_t max_length, char *start_text)
+{
+  uint8_t err;
+  char c;
+  char *tmp = malloc(max_length + 1);
+  uint8_t i = strlen(start_text);
+
+  strcpy(tmp, start_text);
+
+  while (1) {
+    while (!kbhit());
+    c = cgetc();
+    if (c == KEY_RETURN) {
+      err = ERR_OK;
+      break;
+    }
+    else if (c == KEY_ESC)
+    {
+      err = ERR_ABORTED;
+      break;
+    }
+    else if (c == KEY_BACKSPACE) {
+      if (i > 0) {
+        i--;
+        result[i] = '\0';
+      }
+      POKE(cursor_ptr, 0);
+      cursor_ptr--;
+    }
+    else {
+      screen_putc(c);
+      // screen_putc('X');
+    }
+  }
+
+  if (err == ERR_OK) {
+    tmp[i] = '\0';
+    strcpy(result, tmp);
+  }
+
+  free(tmp);
+  return err;
+}
+
+uint8_t screen_input(char *result, uint8_t max_length)
+{
+  return screen_input_default(result, max_length, "");
+}
+
+void dli_text(void);
+void dli_logo_top(void);
+void dli_logo_bottom(void);
+void dli_destination_logo_top(void);
+void dli_destination_logo_bottom(void);
+void dli_destination_text_middle(void);
+void dli_destination_text_background_dark(void);
+void dli_destination_text_background_light(void);
+void dli_destination_text_bottom(void);
 
 void dli_text(void)
 {
@@ -206,14 +316,94 @@ void dli_logo_bottom(void)
   asm("rti");
 }
 
+void dli_destination_text_bottom(void)
+{
+  asm("pha");
+  asm("lda #$02");  // dark grey
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D018"); // COLOR2
+  OS.vdslst = &dli_destination_logo_top;
+  asm("pla");
+  asm("rti");
+}
+
+void dli_destination_logo_top(void)
+{
+  asm("pha");
+  asm("lda #$96");  // blue
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D018"); // COLOR2
+  // asm("lda #$66");
+  // asm("sta $D017"); //COLOR2
+  OS.vdslst = &dli_destination_logo_bottom;
+  asm("pla");
+  asm("rti");
+}
+
+void dli_destination_logo_bottom(void)
+{
+  asm("pha");
+  asm("lda #$36");  // red
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D018"); // COLOR2
+  OS.vdslst = &dli_destination_text_middle;
+  asm("pla");
+  asm("rti");
+}
+
+void dli_destination_text_middle(void)
+{
+  asm("pha");
+  asm("lda #$02");  // dark grey
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D018"); // COLOR2
+  OS.vdslst = &dli_destination_text_background_dark;
+  asm("pla");
+  asm("rti");
+}
+
+void dli_destination_text_background_dark(void)
+{
+  asm("pha");
+  asm("lda #$34");  // red
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D018"); // COLOR2
+  asm("lda #$08");
+  asm("sta $D017"); // COLOR1
+  OS.vdslst = &dli_destination_text_background_light;
+  asm("pla");
+  asm("rti");
+}
+
+void dli_destination_text_background_light(void)
+{
+  asm("pha");
+  asm("lda #$0E");
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D017"); // COLOR1
+  OS.vdslst = &dli_destination_text_bottom;
+  asm("pla");
+  asm("rti");
+}
+
 void set_dlist_default(void)
 {
   memcpy((void *)dlist_mem, &default_dlist, sizeof(default_dlist));
 }
 
-void set_dlist_splash(void)
+void set_dlist_title_text(void)
 {
-  memcpy((void *)dlist_mem, &splash_dlist, sizeof(splash_dlist));
+  memcpy((void *)dlist_mem, &title_text_dlist, sizeof(title_text_dlist));
+}
+
+void set_dlist_logo_with_text(void)
+{
+  memcpy((void *)dlist_mem, &logo_with_text_dlist, sizeof(logo_with_text_dlist));
+}
+
+void set_dlist_destination(void)
+{
+  memcpy((void *)dlist_mem, &destination_dlist, sizeof(destination_dlist));
 }
 
 void init_pmg(void) {
@@ -251,25 +441,24 @@ void ui_init(void)
   set_dlist_default();
   OS.sdlst = (void *)dlist_mem;
 
-  OS.color4 = 0x02;
-  OS.color0 = 0x04;
-  OS.color1 = 0x0E;
-  OS.color2 = 0x02;
+  screen_default_margins();
+
+  OS.color4 = CLR_GRAY_DARK;
+  OS.color0 = CLR_GRAY;
+  OS.color1 = CLR_WHITE;
+  OS.color2 = CLR_GRAY_DARK;
 }
 
-void ui_screen_splash() {
-  unsigned char prevVal = 0;
-
-  set_dlist_splash();
-
-  // screen_clear();
+void start_dli_logo_with_text(void)
+{
+  // unsigned char prevVal = 0;
   // save previous val of 0x22F
   // prevVal = *(unsigned char*)0x22F;
   // // shut off ANTIC
   // *(unsigned char*)0X22F = 0;
 
   // // set the dlist screen
-  // memcpy((void *)DISPLAY_LIST, &splash_dlist, sizeof(splash_dlist));
+  // memcpy((void *)DISPLAY_LIST, &logo_with_text_dlist, sizeof(logo_with_text_dlist));
   OS.vdslst = &dli_logo_top;
 
   // // restore ANTIC
@@ -277,42 +466,88 @@ void ui_screen_splash() {
 
   wait_for_vblank();
   start_dli();
+}
 
-  screen_gotoxy(0, 2);
-  screen_putc(CH_ICON_WALK);
-  screen_putc(CH_ICON_CAR);
-  screen_putc(CH_ICON_BIKE);
-  screen_putc(CH_ICON_BUS);
-  screen_hr(40);
-  screen_putc(CH_ICON_RAIL);
-  screen_putc(CH_ICON_BOAT);
-  screen_putc(CH_ICON_MERGE);
-  screen_putc(CH_ICON_EXIT);
-  screen_hr(40);
-  screen_putc(CH_ICON_PLANE);
-  screen_putc(CH_ICON_SKATEBOARD);
+void start_dli_destination(void)
+{
+  // unsigned char prevVal = 0;
+  // save previous val of 0x22F
+  // prevVal = *(unsigned char*)0x22F;
+  // // shut off ANTIC
+  // *(unsigned char*)0X22F = 0;
 
-  screen_pm_draw_icon(SCR_ICON_PIN, 0, 40);
-  screen_pm_draw_icon(SCR_ICON_CAR, 1, 80);
+  // // set the dlist screen
+  // memcpy((void *)DISPLAY_LIST, &logo_with_text_dlist, sizeof(logo_with_text_dlist));
+  OS.vdslst = &dli_destination_logo_top;
+
+  // // restore ANTIC
+  // *(unsigned char*)0x22F = prevVal;
+
+  wait_for_vblank();
+  start_dli();
+}
+
+void ui_screen_splash() {
+  screen_clear();
+  set_dlist_logo_with_text();
+  start_dli_logo_with_text();
 }
 
 void ui_screen_settings() {
   screen_clear();
-  set_dlist_default();
+  set_dlist_logo_with_text();
+  start_dli_logo_with_text();
 
-  screen_puts("Settings\nheyo");
-
+  screen_puts_center(6, "SERVER");
+  screen_puts_center(8, settings.server);
 }
 
-void ui_screen_destination() {
+void ui_screen_settings_menu_default() {
+  // screen_clear_line(19);
+  screen_puts_center(19, CH_KEY_LABEL_L CH_INV_C CH_KEY_LABEL_R "Config " CH_KEY_RETURN "Continue");
+}
+
+void ui_screen_destination()
+{
+  char result[40];
+
+  // OS.color0 = CLR_RED;
+
+  // stop_dli();
   screen_clear();
-  // show_logo();
-  printf("DESTINATION\n\n");
+  set_dlist_destination();
+  start_dli_destination();
+  // set_dlist_title_text();
+  
+  // screen_gotoxy(1, 0);
+  // screen_puts("DESTINATION");
+
+  screen_puts_center(5, "DESTINATION");
+  screen_gotoxy(2, 7);
+  // screen_puts("the bean");
+
+  cgetc();
+
+  screen_puts("the bean");
+
+  cgetc();
+
+  state = SET_ORIGIN;
+
+  // screen_input(result, 32);
+  // screen_puts(result);
+  // screen_newline();
+}
+
+void ui_screen_destination_menu_default()
+{
+  // screen_clear_line(12);
+  screen_puts_center(18, CH_KEY_LABEL_L CH_INV_C CH_KEY_LABEL_R "Conf " CH_KEY_RETURN "Continue");
 }
 
 void ui_screen_origin() {
   screen_clear();
-  printf("STARTING POINT\n\n");
+  screen_puts("STARTING POINT\n\n");
 }
 
 void ui_screen_route_options(struct RouteOptions *options) {
@@ -320,9 +555,10 @@ void ui_screen_route_options(struct RouteOptions *options) {
   // char c;
 
   screen_clear();
-  printf("ROUTE OPTIONS\n");
+  screen_puts("ROUTE OPTIONS");
 
-  printf("\nMode (%s): ", options->mode);
+  screen_puts("Mode: ");
+  screen_puts(options->mode);
   // readline(&input);
   // if (input[0] != '\0') {
   //   strcpy(options->mode, input);
@@ -331,20 +567,24 @@ void ui_screen_route_options(struct RouteOptions *options) {
 
 void ui_screen_routing() {
   screen_clear();
-  printf("ROUTING...\n");
+  screen_puts("ROUTING...\n");
 }
 
 void ui_screen_directions() {
   uint8_t i;
   screen_clear();
-  printf("From: %s\n", fromLoc.desc);
-  printf("To: %s\n", toLoc.desc);
-  printf("%s | %s\n\n", directions.duration, directions.distance);
+  screen_puts("From: ");
+  screen_puts(fromLoc.desc);
+  screen_puts("To: ");
+  screen_puts(toLoc.desc);
+  screen_puts(directions.duration);
+  screen_puts(" | ");
+  screen_puts(directions.distance);
 
   for (i = 0; i < directions.num_steps; i++) {
     if (i > 0) {
       // chline(40);
     }
-    printf("%s\n", directions.steps[i]->instructions);
+    screen_puts(directions.steps[i]->instructions);
   }
 }

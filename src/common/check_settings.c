@@ -46,13 +46,12 @@ void check_settings(void) {
     init_defaults();
 
     result = load_settings();
-    printf("Result: %d\n", result);
     if (result == ERR_OK) {
         state = SET_DESTINATION;
-        printf("State: SET_DESTINATION\n");
     }
     else {
         state = EDIT_SETTINGS;
-        printf("State: EDIT_SETTINGS\n");
     }
+
+    state = SET_DESTINATION;
 }

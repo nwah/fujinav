@@ -23,9 +23,9 @@ int main() {
   network_init();
   ui_init();
 
-  ui_screen_splash();
+  // ui_screen_splash();
   // while(1){}
-  cgetc();
+  // cgetc();
 
   while (1) {
     switch (state) {
