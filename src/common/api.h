@@ -18,6 +18,7 @@ typedef struct RouteOptions {
 
 typedef struct Step {
     char *instructions;
+    char icon;
 } Step;
 
 typedef struct Directions {

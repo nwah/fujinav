@@ -441,7 +441,7 @@ void dli_location_text_background_dark(void)
   asm("lda %v", color);  // red
   asm("sta $D40A"); // WSYNC
   asm("sta $D018"); // COLOR2
-  asm("lda #$08");
+  asm("lda #$0A");
   asm("sta $D017"); // COLOR1
   OS.vdslst = &dli_location_text_background_light;
   asm("pla");
@@ -620,13 +620,13 @@ void ui_screen_origin() {
 
 void ui_screen_destination_menu_default()
 {
-  // screen_clear_line(12);
+  screen_clear_line(12);
   screen_puts_center(18, CH_KEY_LABEL_L CH_INV_C CH_KEY_LABEL_R "Config " CH_KEY_RETURN "Search");
 }
 
 void ui_screen_origin_menu_default()
 {
-  // screen_clear_line(12);
+  screen_clear_line(12);
   screen_puts_center(18, CH_KEY_ESC "Back " CH_KEY_RETURN "Search");
 }
 
@@ -715,19 +715,81 @@ void ui_screen_routing() {
 
 void ui_screen_directions() {
   uint8_t i;
+  char default_icon;
   screen_clear();
   screen_puts("From: ");
   screen_puts(fromLoc.desc);
+  screen_newline();
   screen_puts("To: ");
   screen_puts(toLoc.desc);
+  screen_newline();
   screen_puts(directions.duration);
   screen_puts(" | ");
   screen_puts(directions.distance);
+  screen_newline();
+
+  // Set default icon based on mode
+  if (strcmp(routeOptions.mode, "biking") == 0) {
+    default_icon = CH_ICON_BIKE;
+  } else if (strcmp(routeOptions.mode, "driving") == 0) {
+    default_icon = CH_ICON_CAR;
+  } else if (strcmp(routeOptions.mode, "walking") == 0) {
+    default_icon = CH_ICON_WALK;
+  } else {
+    default_icon = CH_ICON_UP;
+  }
 
   for (i = 0; i < directions.num_steps; i++) {
     if (i > 0) {
-      // chline(40);
+      screen_newline();
     }
+    
+    // Convert icon character to appropriate screen code
+    switch(directions.steps[i]->icon) {
+      case 'R': // Right/sharp right
+        screen_putc(CH_ICON_RIGHT_TURN);
+        break;
+      case 'r': // Slight right
+        screen_putc(CH_ICON_SLIGHT_RIGHT);
+        break;
+      case 'L': // Left/sharp left
+        screen_putc(CH_ICON_LEFT_TURN);
+        break;
+      case 'l': // Slight left
+        screen_putc(CH_ICON_SLIGHT_LEFT);
+        break;
+      case 'M': // Merge
+        screen_putc(CH_ICON_MERGE);
+        break;
+      case 'E': // Exit
+        screen_putc(CH_ICON_EXIT);
+        break;
+      case 'S': // Straight
+        screen_putc(default_icon); // Use mode-specific icon for continuing straight
+        break;
+      case 'W': // Walk
+        screen_putc(CH_ICON_WALK);
+        break;
+      case 'T': // Rail/train/subway/trolley/streetcar
+        screen_putc(CH_ICON_RAIL);
+        break;
+      case 'B': // Bus
+        screen_putc(CH_ICON_BUS);
+        break;
+      case 'F': // Ferry/boat
+        screen_putc(CH_ICON_BOAT);
+        break;
+      case 'C': // Cycle
+        screen_putc(CH_ICON_BIKE);
+        break;
+      case 'D': // Drive
+        screen_putc(CH_ICON_CAR);
+        break;
+      default:
+        screen_putc(default_icon);
+        break;
+    }
+    screen_putc(' ');
     screen_puts(directions.steps[i]->instructions);
   }
 }

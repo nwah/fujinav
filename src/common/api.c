@@ -112,6 +112,10 @@ void parse_route_response() {
   for (i = 0; i < directions.num_steps; i++) {
     directions.steps[i] = (Step *)malloc(sizeof(Step));
     directions.steps[i]->instructions = (char *)malloc(128);
+    // Get icon
+    bufp += get_line(bufp, line) + 1;
+    directions.steps[i]->icon = line[0];
+    // Get instructions
     bufp += get_line(bufp, directions.steps[i]->instructions) + 1;
   }
 }
