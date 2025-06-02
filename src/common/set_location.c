@@ -15,23 +15,27 @@ static Location *results_ptrs[5];
 uint8_t get_loc(Location *loc)
 {
     uint8_t num_results = 0;
-    char query[80];
+    char query[40];
     char c;
     uint8_t i = 0;
+    uint8_t choice = 0;
+    uint8_t err = 0;
 
     // Initialize pointers array
     for (i = 0; i < 5; i++)
     {
         results_ptrs[i] = &results[i];
     }
-    readline(&query);
+    ui_screen_location_input_query(&query);
 
-    printf("Searching...\n");
+    ui_screen_location_show_searching();
+    // printf("Searching...\n");
     api_geocode(query, results_ptrs, &num_results);
 
     if (num_results == 0)
     {
-        printf("No matches found.\n");
+        ui_screen_location_show_no_matches();
+      // printf("No matches found.\n");
         return ERR_NOT_FOUND;
     }
     else if (num_results == 1)
@@ -40,27 +44,11 @@ uint8_t get_loc(Location *loc)
     }
     else
     {
-        printf("Found %d matches:\n", num_results);
-
-        for (i = 0; i < num_results; i++)
-        {
-            printf("%d: %s\n", i + 1, results[i].desc);
-            printf("   %s\n", results[i].addr);
+        err = ui_screen_location_choose_result(&choice, results_ptrs, num_results);
+        if (err == ERR_OK) {
+            memcpy(loc, &results[choice], sizeof(struct Location));
         }
-
-        while (1)
-        {
-            c = cgetc();
-            if (c == KEY_ABORT)
-            {
-                return ERR_ABORTED;
-            }
-            else if (c >= '1' && c <= '0' + num_results)
-            {
-                memcpy(loc, &results[c - '1'], sizeof(struct Location));
-                return ERR_OK;
-            }
-        }
+        return err;
     }
     return ERR_OK;
 }
@@ -69,6 +57,7 @@ void set_origin(void) {
     uint8_t err;
 
     ui_screen_origin();
+    ui_screen_origin_menu_default();
 
     err = get_loc(&fromLoc);
     if (err != ERR_OK) {

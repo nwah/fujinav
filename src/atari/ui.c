@@ -21,6 +21,7 @@ uint8_t row = 0;
 uint8_t col = 0;
 uint8_t min_col = 0;
 uint8_t max_col = 39;
+uint8_t color = CLR_RED;
 
 unsigned char *cursor_ptr = scr_mem;
 unsigned char *font_ptr = 0;
@@ -77,6 +78,27 @@ void destination_dlist = {
     DL_CHR40x8x1, DL_CHR40x8x1,                             // 24
     DL_JVB, dlist_mem};
 
+void destination_choose_result_dlist = {
+    DL_BLK8, DL_BLK8, DL_BLK8,
+    DL_LMS(DL_CHR40x8x1), scr_mem, // 1
+    DL_DLI(DL_LMS(DL_MAP160x2x4)), &logo_data,
+    DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4,                // 2
+    DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, // 3
+    DL_DLI(DL_MAP160x2x4),
+    DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4, // 4
+    DL_MAP160x2x4, DL_MAP160x2x4, DL_MAP160x2x4,
+    DL_DLI(DL_MAP160x2x4), DL_CHR40x8x1,                       // 5
+    DL_DLI(DL_LMS(DL_CHR40x8x1)), scr_mem + LINE_LENGTH, // 6
+    DL_DLI(DL_CHR40x8x1),
+    DL_CHR40x8x1, DL_CHR40x8x1, // 10
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, // 14
+    DL_CHR40x8x1, DL_CHR40x8x1, // 16
+    DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_CHR40x8x1,
+    DL_DLI(DL_CHR40x8x1),  DL_CHR40x8x1, // 21
+    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, // 24
+    DL_JVB, dlist_mem};
+
 void title_text_dlist = {
     DL_BLK8, DL_BLK8,
     DL_DLI(DL_BLK8),
@@ -126,8 +148,8 @@ void screen_clear(void)
   // row = 0;
   // col = 0;
   // cursor_ptr = scr_mem;
-  memset(scr_mem, 0, LINE_LENGTH * 24); // TODO: smarter size calculation
-} 
+  memset(scr_mem, 0, LINE_LENGTH * 25); // TODO: smarter size calculation
+}
 
 void screen_gotoxy(uint8_t x, uint8_t y)
 {
@@ -164,10 +186,10 @@ void screen_clear_line(uint8_t y) {
 //   POKE(764, 255);
 //   while ((c = PEEK(764)) == 255)
 //     ;
-  
+
 //   if (c > 127)
 //     c -= 127;
-  
+
 //   if (c < 65)
 //     return c - 64;
 //   else if (c < 95)
@@ -195,6 +217,16 @@ void screen_puts(char *s) {
   char c;
   while ((c = *s++) != '\0')
     screen_putc(c);
+}
+
+void screen_puts_max(char *s, uint8_t max_length)
+{
+  uint8_t i = 0;
+  char c;
+  while ((c = *s++) != '\0' && i < max_length) {
+    screen_putc(c);
+    i++;
+  }
 }
 
 void screen_puts_center(uint8_t y, char *s) {
@@ -226,7 +258,7 @@ uint8_t screen_input_default(char *result, uint8_t max_length, char *start_text)
 {
   uint8_t err;
   char c;
-  char *tmp = malloc(max_length + 1);
+  char *tmp = malloc(max_length + 2);
   uint8_t i = strlen(start_text);
 
   strcpy(tmp, start_text);
@@ -234,25 +266,26 @@ uint8_t screen_input_default(char *result, uint8_t max_length, char *start_text)
   while (1) {
     while (!kbhit());
     c = cgetc();
-    if (c == KEY_RETURN) {
+    if (c == CH_ENTER) {
       err = ERR_OK;
       break;
     }
-    else if (c == KEY_ESC)
+    else if (c == CH_ESC)
     {
       err = ERR_ABORTED;
       break;
     }
-    else if (c == KEY_BACKSPACE) {
+    else if (c == CH_DEL || c == CH_CURS_LEFT) {
       if (i > 0) {
         i--;
-        result[i] = '\0';
+        cursor_ptr--;
+        tmp[i] = '\0';
       }
       POKE(cursor_ptr, 0);
-      cursor_ptr--;
     }
     else {
       screen_putc(c);
+      tmp[i++] = c;
       // screen_putc('X');
     }
   }
@@ -271,15 +304,37 @@ uint8_t screen_input(char *result, uint8_t max_length)
   return screen_input_default(result, max_length, "");
 }
 
-void dli_text(void);
+// void dli_foo(void);
 void dli_logo_top(void);
 void dli_logo_bottom(void);
-void dli_destination_logo_top(void);
-void dli_destination_logo_bottom(void);
-void dli_destination_text_middle(void);
-void dli_destination_text_background_dark(void);
-void dli_destination_text_background_light(void);
-void dli_destination_text_bottom(void);
+void dli_location_logo_top(void);
+void dli_location_logo_bottom(void);
+void dli_location_text_middle(void);
+void dli_location_text_background_dark(void);
+void dli_location_text_background_light(void);
+void dli_location_text_bottom(void);
+
+// void dli_bar(void)
+// {
+//   asm("pha");
+//   asm("lda #$D8");
+//   asm("sta $D40A"); // WSYNC
+//   asm("sta $D018"); // COLOR2
+//   OS.vdslst = &dli_foo;
+//   asm("pla");
+//   asm("rti");
+// }
+
+// void dli_foo(void)
+// {
+//   asm("pha");
+//   asm("lda #$A8");
+//   asm("sta $D40A"); // WSYNC
+//   asm("sta $D018"); // COLOR2
+//   OS.vdslst = &dli_bar;
+//   asm("pla");
+//   asm("rti");
+// }
 
 void dli_text(void)
 {
@@ -316,72 +371,96 @@ void dli_logo_bottom(void)
   asm("rti");
 }
 
-void dli_destination_text_bottom(void)
+void dli_location_text_bottom(void)
 {
+  asm("pha");
+  asm("txa");
   asm("pha");
   asm("lda #$02");  // dark grey
   asm("sta $D40A"); // WSYNC
   asm("sta $D018"); // COLOR2
-  OS.vdslst = &dli_destination_logo_top;
+  OS.vdslst = &dli_location_logo_top;
+  asm("pla");
+  asm("tax");
   asm("pla");
   asm("rti");
 }
 
-void dli_destination_logo_top(void)
+void dli_location_logo_top(void)
 {
+  asm("pha");
+  asm("txa");
   asm("pha");
   asm("lda #$96");  // blue
   asm("sta $D40A"); // WSYNC
   asm("sta $D018"); // COLOR2
   // asm("lda #$66");
   // asm("sta $D017"); //COLOR2
-  OS.vdslst = &dli_destination_logo_bottom;
+  OS.vdslst = &dli_location_logo_bottom;
+  asm("pla");
+  asm("tax");
   asm("pla");
   asm("rti");
 }
 
-void dli_destination_logo_bottom(void)
+void dli_location_logo_bottom(void)
 {
+  asm("pha");
+  asm("txa");
   asm("pha");
   asm("lda #$36");  // red
   asm("sta $D40A"); // WSYNC
   asm("sta $D018"); // COLOR2
-  OS.vdslst = &dli_destination_text_middle;
+  OS.vdslst = &dli_location_text_middle;
+  asm("pla");
+  asm("tax");
   asm("pla");
   asm("rti");
 }
 
-void dli_destination_text_middle(void)
+void dli_location_text_middle(void)
 {
+  asm("pha");
+  asm("txa");
   asm("pha");
   asm("lda #$02");  // dark grey
   asm("sta $D40A"); // WSYNC
   asm("sta $D018"); // COLOR2
-  OS.vdslst = &dli_destination_text_background_dark;
+  OS.vdslst = &dli_location_text_background_dark;
+  asm("pla");
+  asm("tax");
   asm("pla");
   asm("rti");
 }
 
-void dli_destination_text_background_dark(void)
+void dli_location_text_background_dark(void)
 {
   asm("pha");
-  asm("lda #$34");  // red
+  asm("txa");
+  asm("pha");
+  asm("lda %v", color);  // red
   asm("sta $D40A"); // WSYNC
   asm("sta $D018"); // COLOR2
   asm("lda #$08");
   asm("sta $D017"); // COLOR1
-  OS.vdslst = &dli_destination_text_background_light;
+  OS.vdslst = &dli_location_text_background_light;
+  asm("pla");
+  asm("tax");
   asm("pla");
   asm("rti");
 }
 
-void dli_destination_text_background_light(void)
+void dli_location_text_background_light(void)
 {
+  asm("pha");
+  asm("txa");
   asm("pha");
   asm("lda #$0E");
   asm("sta $D40A"); // WSYNC
   asm("sta $D017"); // COLOR1
-  OS.vdslst = &dli_destination_text_bottom;
+  OS.vdslst = &dli_location_text_bottom;
+  asm("pla");
+  asm("tax");
   asm("pla");
   asm("rti");
 }
@@ -401,9 +480,14 @@ void set_dlist_logo_with_text(void)
   memcpy((void *)dlist_mem, &logo_with_text_dlist, sizeof(logo_with_text_dlist));
 }
 
-void set_dlist_destination(void)
+void set_dlist_location(void)
 {
   memcpy((void *)dlist_mem, &destination_dlist, sizeof(destination_dlist));
+}
+
+void set_dlist_location_choose_result(void)
+{
+  memcpy((void *)dlist_mem, &destination_choose_result_dlist, sizeof(destination_choose_result_dlist));
 }
 
 void init_pmg(void) {
@@ -434,7 +518,7 @@ void ui_init(void)
   init_pmg();
 
   patch_font();
-  font_ptr = PEEK(756) << 8;
+  font_ptr = (void *)(PEEK(756) << 8);
 
   bzero(scr_mem, 40*25);
 
@@ -468,7 +552,7 @@ void start_dli_logo_with_text(void)
   start_dli();
 }
 
-void start_dli_destination(void)
+void start_dli_location()
 {
   // unsigned char prevVal = 0;
   // save previous val of 0x22F
@@ -478,7 +562,11 @@ void start_dli_destination(void)
 
   // // set the dlist screen
   // memcpy((void *)DISPLAY_LIST, &logo_with_text_dlist, sizeof(logo_with_text_dlist));
-  OS.vdslst = &dli_destination_logo_top;
+
+  OS.vdslst = &dli_location_logo_top;
+  // OS.vdslst = &dli_foo;
+  //
+  // OS.vdslst = &dli_logo_top;
 
   // // restore ANTIC
   // *(unsigned char*)0x22F = prevVal;
@@ -509,45 +597,100 @@ void ui_screen_settings_menu_default() {
 
 void ui_screen_destination()
 {
-  char result[40];
+  color = CLR_RED;
+  stop_dli();
+  start_dli_location();
+  set_dlist_location();
 
-  // OS.color0 = CLR_RED;
-
-  // stop_dli();
   screen_clear();
-  set_dlist_destination();
-  start_dli_destination();
-  // set_dlist_title_text();
-  
-  // screen_gotoxy(1, 0);
-  // screen_puts("DESTINATION");
-
   screen_puts_center(5, "DESTINATION");
   screen_gotoxy(2, 7);
-  // screen_puts("the bean");
+}
 
-  cgetc();
+void ui_screen_origin() {
+  color = CLR_BLUE;
+  stop_dli();
+  start_dli_location();
+  set_dlist_location();
 
-  screen_puts("the bean");
-
-  cgetc();
-
-  state = SET_ORIGIN;
-
-  // screen_input(result, 32);
-  // screen_puts(result);
-  // screen_newline();
+  screen_clear();
+  screen_puts_center(5, "STARTING POINT");
+  screen_gotoxy(2, 7);
 }
 
 void ui_screen_destination_menu_default()
 {
   // screen_clear_line(12);
-  screen_puts_center(18, CH_KEY_LABEL_L CH_INV_C CH_KEY_LABEL_R "Conf " CH_KEY_RETURN "Continue");
+  screen_puts_center(18, CH_KEY_LABEL_L CH_INV_C CH_KEY_LABEL_R "Config " CH_KEY_RETURN "Search");
 }
 
-void ui_screen_origin() {
+void ui_screen_origin_menu_default()
+{
+  // screen_clear_line(12);
+  screen_puts_center(18, CH_KEY_ESC "Back " CH_KEY_RETURN "Search");
+}
+
+uint8_t ui_screen_location_input_query(char *query) {
+  uint8_t err;
+  screen_gotoxy(2, 7);
+  err = screen_input(query, 36);
+  return ERR_OK;
+}
+
+void ui_screen_location_show_searching() {
+  screen_clear_line(7);
+  screen_puts_center(7, "Searching...");
+}
+
+void ui_screen_location_show_no_matches() {
+  screen_clear_line(7);
+  screen_puts_center(7, "No matches found.");
+}
+
+uint8_t ui_screen_location_choose_result(uint8_t *choice, struct Location *results[], uint8_t num_results) {
+  uint8_t i;
+  uint8_t err;
+  char c;
+
+  stop_dli();
+  set_dlist_location_choose_result();
+  start_dli_location();
+
   screen_clear();
-  screen_puts("STARTING POINT\n\n");
+  screen_set_margins(3, 0);
+
+  for (i = 0; i < num_results; i++)
+  {
+    if (i>3) break;
+    screen_gotoxy(1, 3 + i*3);
+    screen_putc(128 + 17 + i);
+    screen_putc(' ');
+    screen_puts_max(results[i]->desc, 36);
+    screen_newline();
+    screen_puts_max(results[i]->addr, 36);
+    // printf("%d: %s\n", i + 1, *results[i].desc);
+      // printf("   %s\n", *results[i].addr);
+  }
+  screen_default_margins();
+
+  while (1)
+  {
+    c = cgetc();
+    if (c == KEY_ABORT)
+    {
+      err = ERR_ABORTED;
+      break;
+    }
+    else if (c >= '1' && c <= '0' + num_results)
+    {
+      *choice = c - '1';
+      err = ERR_OK;
+      break;
+    }
+  }
+
+  set_dlist_location();
+  return err;
 }
 
 void ui_screen_route_options(struct RouteOptions *options) {

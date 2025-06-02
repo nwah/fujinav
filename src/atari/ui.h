@@ -1,13 +1,16 @@
 #ifndef UI_H
 #define UI_H
 
+#include <stdint.h>
 #include "api.h"
 #include "globals.h"
+
+#define INV(a) ((a)|128)
 
 #define CLR_GRAY_DARK 0x02
 #define CLR_GRAY 0x04
 #define CLR_WHITE 0x0E
-#define CLR_RED 0x36
+#define CLR_RED 0x34
 #define CLR_BLUE 0x96
 
 #define CH_KEY_LABEL_L "\x02" // Left arrow on the keyboard
@@ -80,6 +83,11 @@ void ui_screen_settings_menu_default();
 void ui_screen_destination();
 void ui_screen_destination_menu_default();
 void ui_screen_origin();
+void ui_screen_origin_menu_default();
+uint8_t ui_screen_location_input_query(char *query);
+void ui_screen_location_show_searching();
+void ui_screen_location_show_no_matches();
+uint8_t ui_screen_location_choose_result(uint8_t *choice, struct Location *results[], uint8_t num_results);
 void ui_screen_route_options(RouteOptions *options);
 void ui_screen_routing();
 void ui_screen_directions();
