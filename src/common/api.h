@@ -17,7 +17,7 @@ typedef struct RouteOptions {
 } RouteOptions;
 
 typedef struct Step {
-    char *instructions;
+    char instructions[128];
     char icon;
 } Step;
 
@@ -25,7 +25,7 @@ typedef struct Directions {
     char duration[16];
     char distance[16];
     uint8_t num_steps;
-    Step *steps[128];
+    Step steps[32];
 } Directions;
 
 uint8_t api_geocode(char *query, struct Location *result[], uint8_t *num_results);

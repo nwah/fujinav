@@ -64,7 +64,7 @@ void set_origin(void) {
         return;
     }
 
-    state = SET_ROUTE_OPTIONS;
+    state = VIEW_DIRECTIONS;
 }
 
 void set_destination(void)

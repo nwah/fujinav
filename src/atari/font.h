@@ -59,6 +59,11 @@
 #define CH_ICON_CARET_LEFT 62
 #define CH_ICON_CARET_RIGHT 63
 
+#define CH_ICON_WALK_S "\x6"
+#define CH_ICON_CAR_S "\x7"
+#define CH_ICON_BIKE_S "\x8"
+#define CH_ICON_RAIL_S "\xA"
+
 void patch_font(void);
 
 #endif

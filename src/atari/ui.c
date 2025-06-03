@@ -113,15 +113,19 @@ void title_text_dlist = {
     DL_JVB, dlist_mem};
 
 void directions_dlist = {
-    DL_BLK8, DL_BLK8, DL_BLK8,
-    DL_LMS(DL_CHR40x8x1), scr_mem,
+    DL_BLK8, DL_BLK8, DL_DLI(DL_BLK8),
+    DL_DLI(DL_LMS(DL_CHR40x8x1)), scr_mem, // 0
+    DL_DLI(DL_CHR40x8x1),                  // 40
+    DL_DLI(DL_CHR40x8x1), DL_CHR40x8x1,    // 80, 120
+    DL_LMS(DL_CHR40x8x1), scr_mem + 6 * LINE_LENGTH, // 240
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
-    DL_LMS(DL_CHR40x8x1), scr_mem + 4 * 40,
-    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
-    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+    DL_CHR40x8x1,
+    DL_DLI(DL_CHR40x8x1),
+    DL_LMS(DL_CHR40x8x1), scr_mem + 4 * LINE_LENGTH, // 160
+    DL_CHR40x8x1, // 200
     DL_JVB, dlist_mem
 };
 
@@ -145,9 +149,6 @@ void stop_dli(void)
 
 void screen_clear(void)
 {
-  // row = 0;
-  // col = 0;
-  // cursor_ptr = scr_mem;
   memset(scr_mem, 0, LINE_LENGTH * 25); // TODO: smarter size calculation
 }
 
@@ -171,38 +172,37 @@ void screen_default_margins(void)
 
 void screen_newline() {
   // TODO: wrap around to top? scroll? ignore?
-  cursor_ptr += LINE_LENGTH - col + min_col;
-  col = min_col;
-  row++;
+
+  // TODO: optimize by just moving forward based on current position
+  // if (col > max_col) col = max_col;
+  // cursor_ptr += LINE_LENGTH - col + min_col;
+  // col = min_col;
+  // row++;
+
+  screen_gotoxy(min_col, row + 1);
 }
 
 void screen_clear_line(uint8_t y) {
   memset(scr_mem + y * LINE_LENGTH, 0, LINE_LENGTH);
 }
 
-// char screen_getkey(void)
-// {
-//   char c;
-//   POKE(764, 255);
-//   while ((c = PEEK(764)) == 255)
-//     ;
-
-//   if (c > 127)
-//     c -= 127;
-
-//   if (c < 65)
-//     return c - 64;
-//   else if (c < 95)
-//     return c;
-//   else
-//     return c - 32;
-// }
+void screen_back(uint8_t steps)
+{
+  if (col == 0)
+    return;
+  if (steps > col)
+    steps = col;
+  col -= steps;
+  cursor_ptr -= steps;
+}
 
 void screen_putc(char c)
 {
-  col++;
   if (col > max_col)
     screen_newline();
+  else
+    col++;
+
   if (c == CH_NEWLINE)
     screen_newline();
   else if (c < 32)
@@ -238,9 +238,9 @@ void screen_puts_center(uint8_t y, char *s) {
 }
 
 void screen_hr(uint8_t length) {
-  screen_newline();
+  // screen_newline();
   memset(cursor_ptr, SCR_ICON_HLINE, length);
-  screen_newline();
+  // screen_newline();
 }
 
 void screen_pm_draw_icon(uint8_t icon, uint8_t p, uint8_t y) {
@@ -304,9 +304,10 @@ uint8_t screen_input(char *result, uint8_t max_length)
   return screen_input_default(result, max_length, "");
 }
 
-// void dli_foo(void);
+void dli_text(void);
 void dli_logo_top(void);
 void dli_logo_bottom(void);
+
 void dli_location_logo_top(void);
 void dli_location_logo_bottom(void);
 void dli_location_text_middle(void);
@@ -314,27 +315,11 @@ void dli_location_text_background_dark(void);
 void dli_location_text_background_light(void);
 void dli_location_text_bottom(void);
 
-// void dli_bar(void)
-// {
-//   asm("pha");
-//   asm("lda #$D8");
-//   asm("sta $D40A"); // WSYNC
-//   asm("sta $D018"); // COLOR2
-//   OS.vdslst = &dli_foo;
-//   asm("pla");
-//   asm("rti");
-// }
-
-// void dli_foo(void)
-// {
-//   asm("pha");
-//   asm("lda #$A8");
-//   asm("sta $D40A"); // WSYNC
-//   asm("sta $D018"); // COLOR2
-//   OS.vdslst = &dli_bar;
-//   asm("pla");
-//   asm("rti");
-// }
+void dli_directions_header_1(void);
+void dli_directions_header_2(void);
+void dli_directions_header_3(void);
+void dli_directions_body(void);
+void dli_directions_footer(void);
 
 void dli_text(void)
 {
@@ -441,7 +426,7 @@ void dli_location_text_background_dark(void)
   asm("lda %v", color);  // red
   asm("sta $D40A"); // WSYNC
   asm("sta $D018"); // COLOR2
-  asm("lda #$0A");
+  asm("lda #$0C");
   asm("sta $D017"); // COLOR1
   OS.vdslst = &dli_location_text_background_light;
   asm("pla");
@@ -459,6 +444,82 @@ void dli_location_text_background_light(void)
   asm("sta $D40A"); // WSYNC
   asm("sta $D017"); // COLOR1
   OS.vdslst = &dli_location_text_bottom;
+  asm("pla");
+  asm("tax");
+  asm("pla");
+  asm("rti");
+}
+
+void dli_directions_header_1(void)
+{
+  asm("pha");
+  asm("txa");
+  asm("pha");
+  asm("lda #$94");  // blue
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D018"); // COLOR2
+  OS.vdslst = &dli_directions_header_2;
+  asm("pla");
+  asm("tax");
+  asm("pla");
+  asm("rti");
+}
+
+void dli_directions_header_2(void)
+{
+  asm("pha");
+  asm("txa");
+  asm("pha");
+  asm("lda #$34");  // red
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D018"); // COLOR2
+  OS.vdslst = &dli_directions_header_3;
+  asm("pla");
+  asm("tax");
+  asm("pla");
+  asm("rti");
+}
+
+void dli_directions_header_3(void)
+{
+  asm("pha");
+  asm("txa");
+  asm("pha");
+  asm("lda #$02");  // dark gray
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D018"); // COLOR2
+  OS.vdslst = &dli_directions_body;
+  asm("pla");
+  asm("tax");
+  asm("pla");
+  asm("rti");
+}
+
+void dli_directions_body(void)
+{
+  asm("pha");
+  asm("txa");
+  asm("pha");
+  // asm("lda #$00");  // black
+  asm("lda #$02");  // dark gray
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D018"); // COLOR2
+  OS.vdslst = &dli_directions_footer;
+  asm("pla");
+  asm("tax");
+  asm("pla");
+  asm("rti");
+}
+
+void dli_directions_footer(void)
+{
+  asm("pha");
+  asm("txa");
+  asm("pha");
+  asm("lda #$02");  // dark gray
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D018"); // COLOR2
+  OS.vdslst = &dli_directions_header_1;
   asm("pla");
   asm("tax");
   asm("pla");
@@ -488,6 +549,11 @@ void set_dlist_location(void)
 void set_dlist_location_choose_result(void)
 {
   memcpy((void *)dlist_mem, &destination_choose_result_dlist, sizeof(destination_choose_result_dlist));
+}
+
+void set_dlist_directions(void)
+{
+  memcpy((void *)dlist_mem, &directions_dlist, sizeof(directions_dlist));
 }
 
 void init_pmg(void) {
@@ -574,6 +640,31 @@ void start_dli_location()
   wait_for_vblank();
   start_dli();
 }
+
+void start_dli_directions()
+{
+  // unsigned char prevVal = 0;
+  // save previous val of 0x22F
+  // prevVal = *(unsigned char*)0x22F;
+  // // shut off ANTIC
+  // *(unsigned char*)0X22F = 0;
+
+  // // set the dlist screen
+  // memcpy((void *)DISPLAY_LIST, &logo_with_text_dlist, sizeof(logo_with_text_dlist));
+
+  OS.vdslst = &dli_directions_header_1;
+  // OS.vdslst = &dli_foo;
+  //
+  // OS.vdslst = &dli_logo_top;
+
+  // // restore ANTIC
+  // *(unsigned char*)0x22F = prevVal;
+
+  wait_for_vblank();
+  start_dli();
+}
+
+
 
 void ui_screen_splash() {
   screen_clear();
@@ -714,19 +805,37 @@ void ui_screen_routing() {
 }
 
 void ui_screen_directions() {
-  uint8_t i;
-  char default_icon;
+  stop_dli();
+  set_dlist_directions();
+  start_dli_directions();
+
   screen_clear();
-  screen_puts("From: ");
+  screen_gotoxy(1, 0);
+  screen_set_margins(1, 1);
+
+  screen_putc(CH_ICON_PIN);
+  screen_putc(' ');
   screen_puts(fromLoc.desc);
   screen_newline();
-  screen_puts("To: ");
+  screen_putc(CH_ICON_PIN);
+  screen_putc(' ');
   screen_puts(toLoc.desc);
-  screen_newline();
-  screen_puts(directions.duration);
-  screen_puts(" | ");
-  screen_puts(directions.distance);
-  screen_newline();
+}
+
+void ui_screen_directions_show_routing()
+{
+  screen_clear_line(2);
+  screen_gotoxy(1, 2);
+  screen_puts("Routing...");
+}
+
+void ui_screen_directions_show_results()
+{
+  uint8_t i;
+  char default_icon;
+
+  screen_clear_line(2);
+  screen_gotoxy(1, 2);
 
   // Set default icon based on mode
   if (strcmp(routeOptions.mode, "biking") == 0) {
@@ -736,16 +845,34 @@ void ui_screen_directions() {
   } else if (strcmp(routeOptions.mode, "walking") == 0) {
     default_icon = CH_ICON_WALK;
   } else {
-    default_icon = CH_ICON_UP;
+    default_icon = CH_ICON_RAIL;
   }
+
+  screen_putc(default_icon);
+  screen_putc(' ');
+  screen_puts(directions.duration);
+  screen_puts(" | ");
+  screen_puts(directions.distance);
+
+  screen_set_margins(0, 0);
+  screen_newline();
+  screen_hr(40);
+  screen_newline();
+  screen_hr(40);
+  screen_newline();
+  screen_newline();
+  screen_set_margins(3, 0);
+  screen_newline();
 
   for (i = 0; i < directions.num_steps; i++) {
     if (i > 0) {
       screen_newline();
     }
-    
+
+    screen_back(2);
+
     // Convert icon character to appropriate screen code
-    switch(directions.steps[i]->icon) {
+    switch(directions.steps[i].icon) {
       case 'R': // Right/sharp right
         screen_putc(CH_ICON_RIGHT_TURN);
         break;
@@ -786,10 +913,46 @@ void ui_screen_directions() {
         screen_putc(CH_ICON_CAR);
         break;
       default:
-        screen_putc(default_icon);
+        screen_putc(' ');
         break;
     }
     screen_putc(' ');
-    screen_puts(directions.steps[i]->instructions);
+    screen_puts(directions.steps[i].instructions);
   }
+}
+
+void ui_screen_directions_scroll_up()
+{
+
+}
+
+void ui_screen_directions_scroll_down()
+{
+
+}
+
+void ui_screen_directions_menu_default()
+{
+  char label[] = {
+    CH_KEY_ESC "Back "
+    CH_KEY_LABEL_L
+      CH_INV_C CH_INV_T CH_INV_B CH_INV_W
+    CH_KEY_LABEL_R "C R " CH_ICON_BIKE_S " " CH_ICON_WALK_S " "
+    CH_KEY_LABEL_L CH_INV_UP CH_INV_DOWN CH_KEY_LABEL_R "Scroll"
+  };
+  // ASCII conversion is treating 0x0A as a \n newline
+  label[16] = CH_ICON_CAR;
+  label[18] = CH_ICON_RAIL;
+
+  screen_clear_line(5);
+  // screen_puts_center(5, CH_KEY_ESC "Back " CH_KEY_LABEL_L CH_INV_C CH_INV_T CH_INV_W CH_INV_B CH_KEY_LABEL_R "Mode " CH_KEY_LABEL_L CH_INV_UP CH_INV_DOWN CH_KEY_LABEL_R "Scroll");
+  // screen_puts_center(5, CH_KEY_ESC "Back "
+  //   CH_KEY_LABEL_L CH_INV_C CH_KEY_LABEL_R CH_ICON_CAR_S
+  //   CH_KEY_LABEL_L CH_INV_T CH_KEY_LABEL_R CH_ICON_RAIL_S
+  //   CH_KEY_LABEL_L CH_INV_W CH_KEY_LABEL_R CH_ICON_WALK_S
+  //   CH_KEY_LABEL_L CH_INV_B CH_KEY_LABEL_R CH_ICON_BIKE_S
+  //   CH_KEY_LABEL_L CH_INV_UP CH_INV_DOWN CH_KEY_LABEL_R "Scroll");
+  //
+  screen_puts_center(5, label);
+  // screen_puts("|ESC|Back |DBWT|Mode |^v|Scroll |P|Print");
 }

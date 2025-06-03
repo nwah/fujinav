@@ -6,11 +6,6 @@
 #include "ui.h"
 #include "globals.h"
 
-#define MODE_TRANSIT "transit"
-#define MODE_DRIVING "driving"
-#define MODE_WALKING "walking"
-#define MODE_BIKING "biking"
-
 void set_route_options(void) {
     char c;
     ui_screen_route_options(&routeOptions);

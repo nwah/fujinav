@@ -13,6 +13,11 @@
 #define ERR_ABORTED 1
 #define ERR_NOT_FOUND 2
 
+#define MODE_TRANSIT "transit"
+#define MODE_DRIVING "driving"
+#define MODE_WALKING "walking"
+#define MODE_BIKING "biking"
+
 typedef enum _state
 {
     CHECK_SETTINGS,

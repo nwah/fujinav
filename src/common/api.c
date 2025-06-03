@@ -7,8 +7,8 @@
 #include "globals.h"
 #include "typedefs.h"
 
-#define GEOCODE_URL "N:HTTP://localhost:8080/geocode"
-#define ROUTE_URL "N:HTTP://localhost:8080/route"
+#define GEOCODE_URL "N:HTTP://localhost:8080/nav/geocode"
+#define ROUTE_URL "N:HTTP://localhost:8080/nav/route"
 #define CHAR_NL 0x9B
 
 char buf[2048];
@@ -110,13 +110,12 @@ void parse_route_response() {
   
   // Parse each step
   for (i = 0; i < directions.num_steps; i++) {
-    directions.steps[i] = (Step *)malloc(sizeof(Step));
-    directions.steps[i]->instructions = (char *)malloc(128);
     // Get icon
     bufp += get_line(bufp, line) + 1;
-    directions.steps[i]->icon = line[0];
+    directions.steps[i].icon = line[0];
     // Get instructions
-    bufp += get_line(bufp, directions.steps[i]->instructions) + 1;
+    bufp += get_line(bufp, line) + 1;
+    strcpy(directions.steps[i].instructions, line);
   }
 }
 

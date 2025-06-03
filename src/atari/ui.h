@@ -53,6 +53,8 @@
 #define CH_INV_7 "\x97"
 #define CH_INV_8 "\x98"
 #define CH_INV_9 "\x99"
+#define CH_INV_UP "\xDC"
+#define CH_INV_DOWN "\xDD"
 #define CH_INV_LEFT "\xDE"
 #define CH_INV_RIGHT "\xDF"
 
@@ -91,6 +93,11 @@ uint8_t ui_screen_location_choose_result(uint8_t *choice, struct Location *resul
 void ui_screen_route_options(RouteOptions *options);
 void ui_screen_routing();
 void ui_screen_directions();
+void ui_screen_directions_show_routing();
+void ui_screen_directions_show_results();
+void ui_screen_directions_menu_default();
+void ui_screen_directions_scroll_up();
+void ui_screen_directions_scroll_down();
 // void ui_screen_print();
 
 #endif // UI_H
