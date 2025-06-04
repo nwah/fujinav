@@ -11,7 +11,7 @@
 #define ROUTE_URL "N:HTTP://localhost:8080/nav/route"
 #define CHAR_NL 0x9B
 
-char buf[2048];
+char buf[3072];
 char reqBody[128];
 uint16_t bufsize = 0;
 
@@ -107,6 +107,9 @@ void parse_route_response() {
   // Get number of steps
   bufp += get_line(bufp, line) + 1;
   directions.num_steps = atoi(line);
+  if (directions.num_steps > 32) {
+    directions.num_steps = 32;
+  }
   
   // Parse each step
   for (i = 0; i < directions.num_steps; i++) {
@@ -123,6 +126,7 @@ uint8_t api_route(char *fromLatLng, char *toLatLng, RouteOptions *options) {
   uint8_t err = 0;
   uint8_t status;
   uint16_t bw;
+  uint16_t to_read = 512;
 
   bufsize = 0;
   memset(buf, 0, sizeof(buf));
@@ -154,15 +158,28 @@ uint8_t api_route(char *fromLatLng, char *toLatLng, RouteOptions *options) {
     return err;
   }
 
-  err = network_read(ROUTE_URL, &buf, bw);
-  if (err < 0) {
-    network_close(ROUTE_URL);
-    return -err;
+  while (bw > 0) {
+    if (to_read > bw) {
+      to_read = bw;
+    }
+    if (bufsize + to_read > sizeof(buf)) {
+      to_read = sizeof(buf) - bufsize;
+    }
+    if (to_read == 0) {
+      break;
+    }
+    err = network_read(ROUTE_URL, &buf[bufsize], to_read);
+    if (err < 0) {
+      network_close(ROUTE_URL);
+      return -err;
+    }
+    bufsize += to_read;
+
+    network_status(ROUTE_URL, &bw, &status, &err);
   }
 
   network_close(ROUTE_URL);
 
-  bufsize += bw;
   parse_route_response();
 
   return err;

@@ -22,6 +22,9 @@ uint8_t col = 0;
 uint8_t min_col = 0;
 uint8_t max_col = 39;
 uint8_t color = CLR_RED;
+uint8_t visible_rows = 14;
+uint8_t total_rows = 0;
+uint8_t scrolled_rows = 0;
 
 unsigned char *cursor_ptr = scr_mem;
 unsigned char *font_ptr = 0;
@@ -112,22 +115,49 @@ void title_text_dlist = {
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
     DL_JVB, dlist_mem};
 
+// void directions_dlist = {
+//     DL_BLK8, DL_BLK8, DL_DLI(DL_BLK8),
+//     DL_DLI(DL_LMS(DL_CHR40x8x1)), scr_mem, // 0
+//     DL_DLI(DL_CHR40x8x1),                  // 40
+//     DL_DLI(DL_CHR40x8x1), DL_CHR40x8x1,    // 80, 120
+//     DL_LMS(DL_CHR40x8x1), scr_mem + 6 * LINE_LENGTH, // 240
+//     // DL_LMS(DL_CHR40x8x1), scr_mem + 0 * LINE_LENGTH, // 240
+//     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+//     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+//     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+//     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
+//     DL_CHR40x8x1,
+//     DL_DLI(DL_CHR40x8x1),
+//     DL_LMS(DL_CHR40x8x1), scr_mem + 4 * LINE_LENGTH, // 160
+//     DL_CHR40x8x1,                                    // 200
+//     DL_JVB, dlist_mem};
+
 void directions_dlist = {
     DL_BLK8, DL_BLK8, DL_DLI(DL_BLK8),
-    DL_DLI(DL_LMS(DL_CHR40x8x1)), scr_mem, // 0
-    DL_DLI(DL_CHR40x8x1),                  // 40
-    DL_DLI(DL_CHR40x8x1), DL_CHR40x8x1,    // 80, 120
+    DL_DLI(DL_LMS(DL_CHR40x8x1)), scr_mem,           // 0
+    DL_DLI(DL_CHR40x8x1),                            // 40
+    DL_DLI(DL_CHR40x8x1), DL_CHR40x8x1,              // 80, 120
     DL_LMS(DL_CHR40x8x1), scr_mem + 6 * LINE_LENGTH, // 240
-    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
-    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
-    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
-    DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
-    DL_CHR40x8x1,
-    DL_DLI(DL_CHR40x8x1),
+    DL_LMS(DL_CHR40x8x1), scr_mem + 7 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 8 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 9 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 10 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 11 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 12 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 13 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 14 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 15 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 16 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 17 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 18 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 19 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 20 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 21 * LINE_LENGTH,
+    DL_LMS(DL_CHR40x8x1), scr_mem + 22 * LINE_LENGTH,
+    DL_DLI(DL_LMS(DL_CHR40x8x1)), scr_mem + 23 * LINE_LENGTH,
     DL_LMS(DL_CHR40x8x1), scr_mem + 4 * LINE_LENGTH, // 160
-    DL_CHR40x8x1, // 200
-    DL_JVB, dlist_mem
-};
+    DL_CHR40x8x1,                                    // 200
+    DL_JVB, dlist_mem};
 
 void wait_for_vblank(void)
 {
@@ -804,12 +834,7 @@ void ui_screen_routing() {
   screen_puts("ROUTING...\n");
 }
 
-void ui_screen_directions() {
-  stop_dli();
-  set_dlist_directions();
-  start_dli_directions();
-
-  screen_clear();
+void ui_screen_directions_show_header() {
   screen_gotoxy(1, 0);
   screen_set_margins(1, 1);
 
@@ -820,6 +845,15 @@ void ui_screen_directions() {
   screen_putc(CH_ICON_PIN);
   screen_putc(' ');
   screen_puts(toLoc.desc);
+}
+
+void ui_screen_directions() {
+  stop_dli();
+  set_dlist_directions();
+  start_dli_directions();
+
+  screen_clear();
+  ui_screen_directions_show_header();
 }
 
 void ui_screen_directions_show_routing()
@@ -834,9 +868,10 @@ void ui_screen_directions_show_results()
   uint8_t i;
   char default_icon;
 
-  screen_clear_line(2);
+  screen_clear();
+  ui_screen_directions_show_header();
+  
   screen_gotoxy(1, 2);
-
   // Set default icon based on mode
   if (strcmp(routeOptions.mode, "biking") == 0) {
     default_icon = CH_ICON_BIKE;
@@ -903,6 +938,9 @@ void ui_screen_directions_show_results()
       case 'B': // Bus
         screen_putc(CH_ICON_BUS);
         break;
+      case 'b': // building
+        screen_putc(CH_ICON_BUILDING);
+        break;
       case 'F': // Ferry/boat
         screen_putc(CH_ICON_BOAT);
         break;
@@ -913,22 +951,56 @@ void ui_screen_directions_show_results()
         screen_putc(CH_ICON_CAR);
         break;
       default:
-        screen_putc(' ');
+        screen_putc(default_icon);
         break;
     }
     screen_putc(' ');
     screen_puts(directions.steps[i].instructions);
   }
+
+  POKEW(&directions_dlist + 10, scr_mem);
+
+  total_rows = row - 6;
+  scrolled_rows = 0;
+}
+
+void ui_screen_directions_update_scroll()
+{
+  uint8_t i = 0;
+  uint16_t screen_addr = &scr_mem[0] + (6 + scrolled_rows) * LINE_LENGTH;
+
+  uint16_t dlist_addr = dlist_mem + 10;
+  
+  for (i = 0; i < 18; i++) {
+    POKEW(dlist_addr, screen_addr);
+    dlist_addr += 3;
+    screen_addr += LINE_LENGTH;
+  }
+
+  // POKEW(dlist_addr, screen_addr);
+  // POKE(&directions_dlist + 10, addr);
+  // POKE(&directions_dlist + 11, addr >> 8);
+  // screen_gotoxy(0, 0);
+  // screen_putc('0' + scrolled_rows);
 }
 
 void ui_screen_directions_scroll_up()
 {
-
+  if (scrolled_rows > 0)
+  {
+    scrolled_rows--; 
+    ui_screen_directions_update_scroll();
+  }
 }
 
 void ui_screen_directions_scroll_down()
 {
-
+  if (scrolled_rows < total_rows - visible_rows)
+  // if (scrolled_rows < 10)
+  {
+    scrolled_rows++;
+    ui_screen_directions_update_scroll();
+  }
 }
 
 void ui_screen_directions_menu_default()
@@ -940,7 +1012,7 @@ void ui_screen_directions_menu_default()
     CH_KEY_LABEL_R "C R " CH_ICON_BIKE_S " " CH_ICON_WALK_S " "
     CH_KEY_LABEL_L CH_INV_UP CH_INV_DOWN CH_KEY_LABEL_R "Scroll"
   };
-  // ASCII conversion is treating 0x0A as a \n newline
+  // cc65 ASCII conversion is treating 0x0A as a \n and converting it to a newline
   label[16] = CH_ICON_CAR;
   label[18] = CH_ICON_RAIL;
 

@@ -17,8 +17,8 @@ void view_directions(void) {
     ui_screen_directions_show_routing();
     api_route(fromLoc.latlng, toLoc.latlng, &routeOptions);
 
-    ui_screen_directions_menu_default();
     ui_screen_directions_show_results();
+    ui_screen_directions_menu_default();
 
     while (waiting) {
       waiting = false;
@@ -46,10 +46,14 @@ void view_directions(void) {
           state = SET_DESTINATION;
           break;
         case CH_CURS_UP:
+        case 'i':
+        case 'I':
           waiting = true;
           ui_screen_directions_scroll_up();
           break;
         case CH_CURS_DOWN:
+        case 'k':
+        case 'K':
           waiting = true;
           ui_screen_directions_scroll_down();
           break;

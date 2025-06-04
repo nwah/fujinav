@@ -8,7 +8,8 @@
 
 void init_defaults()
 {
-    strcpy(routeOptions.mode, "transit");
+    // strcpy(routeOptions.mode, "transit");
+    strcpy(routeOptions.mode, "driving");
     strcpy(routeOptions.country, "us");
     strcpy(routeOptions.units, "mi");
     strcpy(settings.server, "http://localhost:8080");
