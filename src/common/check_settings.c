@@ -12,7 +12,7 @@ void init_defaults()
     strcpy(routeOptions.mode, "driving");
     strcpy(routeOptions.country, "us");
     strcpy(routeOptions.units, "mi");
-    strcpy(settings.server, "http://localhost:8080");
+    strcpy(settings.server, "http://svart.local:8080");
 }
 
 int load_settings()

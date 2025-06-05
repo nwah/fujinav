@@ -870,7 +870,7 @@ void ui_screen_directions_show_results()
 
   screen_clear();
   ui_screen_directions_show_header();
-  
+
   screen_gotoxy(1, 2);
   // Set default icon based on mode
   if (strcmp(routeOptions.mode, "biking") == 0) {
@@ -970,7 +970,7 @@ void ui_screen_directions_update_scroll()
   uint16_t screen_addr = &scr_mem[0] + (6 + scrolled_rows) * LINE_LENGTH;
 
   uint16_t dlist_addr = dlist_mem + 10;
-  
+
   for (i = 0; i < 18; i++) {
     POKEW(dlist_addr, screen_addr);
     dlist_addr += 3;
@@ -988,7 +988,7 @@ void ui_screen_directions_scroll_up()
 {
   if (scrolled_rows > 0)
   {
-    scrolled_rows--; 
+    scrolled_rows--;
     ui_screen_directions_update_scroll();
   }
 }
@@ -1027,4 +1027,28 @@ void ui_screen_directions_menu_default()
   //
   screen_puts_center(5, label);
   // screen_puts("|ESC|Back |DBWT|Mode |^v|Scroll |P|Print");
+}
+
+void ui_screen_print() {
+  stop_dli();
+  set_dlist_default();
+  screen_clear();
+
+  screen_gotoxy(0, 0);
+  // screen_puts("PRINT DIRECTIONS");
+
+  screen_clear_line(8);
+  screen_puts_center(8, "Press any key to print");
+}
+
+void ui_screen_print_show_printing()
+{
+  screen_clear_line(8);
+  screen_puts_center(8, "Printing...");
+}
+
+void ui_screen_print_show_finished()
+{
+  screen_clear_line(8);
+  screen_puts_center(8, "Finished...");
 }

@@ -7,6 +7,7 @@
 #include "globals.h"
 #include "typedefs.h"
 #include "ui.h"
+#include "printer.h"
 
 void view_directions(void) {
     char c;
@@ -57,6 +58,10 @@ void view_directions(void) {
           waiting = true;
           ui_screen_directions_scroll_down();
           break;
+        case 'p':
+        case 'P':
+            state = PRINT_DIRECTIONS;
+            break;
         default:
           waiting = true;
           break;

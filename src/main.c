@@ -16,16 +16,27 @@
 #include "print_directions.h"
 #include "view_qr_code.h"
 #include "ui.h"
+// #include "printer.h"
 
 char *version = "1.0.0";
 
 int main() {
+  // FILE *printer = fopen("P1:", "w");
+  // fprintf(printer, "Hello world\n");
+  // fprintf(printer, "Hello world\n");
+  // fprintf(printer, "Hello world\n");
+  // fclose(printer);
+  // printer_open();
+  // printer_print("Hello, world!");
+  // printer_close();
+
+  // cgetc();
+
   network_init();
   ui_init();
 
   // ui_screen_splash();
   // while(1){}
-  // cgetc();
 
   while (1) {
     switch (state) {

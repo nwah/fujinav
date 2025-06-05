@@ -7,8 +7,10 @@
 #include "globals.h"
 #include "typedefs.h"
 
-#define GEOCODE_URL "N:HTTP://localhost:8080/nav/geocode"
-#define ROUTE_URL "N:HTTP://localhost:8080/nav/route"
+// #define GEOCODE_URL "N:HTTP://localhost:8080/nav/geocode"
+// #define ROUTE_URL "N:HTTP://localhost:8080/nav/route"
+#define GEOCODE_URL "N:HTTP://svart.local:8080/nav/geocode"
+#define ROUTE_URL "N:HTTP://svart.local:8080/nav/route"
 #define CHAR_NL 0x9B
 
 char buf[3072];
