@@ -1,9 +1,11 @@
-#ifndef UI_H
-#define UI_H
+#ifndef SCREEN_H
+#define SCREEN_H
 
 #include <stdint.h>
-#include "api.h"
-#include "globals.h"
+
+#define LINE_LENGTH 40
+#define KEY_BACKSPACE 0x08
+
 
 #define INV(a) ((a)|128)
 
@@ -78,34 +80,40 @@ extern unsigned char scr_mem[];
 extern unsigned char pmg_mem[];
 extern unsigned char logo_data[640];
 
-void ui_init(void);
+extern uint8_t row;
+extern uint8_t col;
+extern uint8_t min_col;
+extern uint8_t max_col;
+extern uint8_t color;
+extern uint8_t visible_rows;
+extern uint8_t total_rows;
+extern uint8_t scrolled_rows;
 
-void ui_screen_splash();
+extern unsigned char *cursor_ptr;
+extern unsigned char *font_ptr;
 
-void ui_screen_settings();
-void ui_screen_settings_menu_default();
+void wait_for_vblank(void);
 
-void ui_screen_destination();
-void ui_screen_destination_menu_default();
-void ui_screen_origin();
-void ui_screen_origin_menu_default();
-uint8_t ui_screen_location_input_query(char *query);
-void ui_screen_location_show_searching();
-void ui_screen_location_show_no_matches();
-uint8_t ui_screen_location_choose_result(uint8_t *choice, struct Location *results[], uint8_t num_results);
+void dli_start(void);
+void dli_stop(void);
 
-void ui_screen_route_options(RouteOptions *options);
-void ui_screen_routing();
+void screen_clear(void);
+void screen_gotoxy(uint8_t x, uint8_t y);
+void screen_set_margins(uint8_t left, uint8_t right);
+void screen_default_margins(void);
+void screen_newline();
+void screen_clear_line(uint8_t y);
+void screen_back(uint8_t steps);
+void screen_putc(char c);
+void screen_puts(char *s);
+void screen_puts_max(char *s, uint8_t max_length);
+void screen_puts_center(uint8_t y, char *s);
+void screen_hr(uint8_t length);
 
-void ui_screen_directions();
-void ui_screen_directions_show_routing();
-void ui_screen_directions_show_results();
-void ui_screen_directions_menu_default();
-void ui_screen_directions_scroll_up();
-void ui_screen_directions_scroll_down();
+void screen_pm_draw_icon(uint8_t icon, uint8_t p, uint8_t y);
+void screen_pm_clear_icon(uint8_t p, uint8_t y);
 
-void ui_screen_print();
-void ui_screen_print_show_printing();
-void ui_screen_print_show_finished();
+uint8_t screen_input_default(char *result, uint8_t max_length, char *start_text);
+uint8_t screen_input(char *result, uint8_t max_length);
 
-#endif // UI_H
+#endif

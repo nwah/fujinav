@@ -1,33 +1,14 @@
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <atari.h>
 #include <conio.h>
 #include <peekpoke.h>
 #include <sys/types.h>
 #include "api.h"
-#include "util.h"
 #include "globals.h"
 #include "font.h"
 #include "ui.h"
-
-#define LINE_LENGTH 40
-#define KEY_BACKSPACE 0x08
-// #define KEY_ESC 0x1B
-// #define KEY_RETURN 0x9B
-
-uint8_t row = 0;
-uint8_t col = 0;
-uint8_t min_col = 0;
-uint8_t max_col = 39;
-uint8_t color = CLR_RED;
-uint8_t visible_rows = 14;
-uint8_t total_rows = 0;
-uint8_t scrolled_rows = 0;
-
-unsigned char *cursor_ptr = scr_mem;
-unsigned char *font_ptr = 0;
+#include "screen.h"
 
 void default_dlist = {
     DL_BLK8, DL_BLK8, DL_BLK8,
@@ -115,23 +96,6 @@ void title_text_dlist = {
     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
     DL_JVB, dlist_mem};
 
-// void directions_dlist = {
-//     DL_BLK8, DL_BLK8, DL_DLI(DL_BLK8),
-//     DL_DLI(DL_LMS(DL_CHR40x8x1)), scr_mem, // 0
-//     DL_DLI(DL_CHR40x8x1),                  // 40
-//     DL_DLI(DL_CHR40x8x1), DL_CHR40x8x1,    // 80, 120
-//     DL_LMS(DL_CHR40x8x1), scr_mem + 6 * LINE_LENGTH, // 240
-//     // DL_LMS(DL_CHR40x8x1), scr_mem + 0 * LINE_LENGTH, // 240
-//     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
-//     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
-//     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
-//     DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1, DL_CHR40x8x1,
-//     DL_CHR40x8x1,
-//     DL_DLI(DL_CHR40x8x1),
-//     DL_LMS(DL_CHR40x8x1), scr_mem + 4 * LINE_LENGTH, // 160
-//     DL_CHR40x8x1,                                    // 200
-//     DL_JVB, dlist_mem};
-
 void directions_dlist = {
     DL_BLK8, DL_BLK8, DL_DLI(DL_BLK8),
     DL_DLI(DL_LMS(DL_CHR40x8x1)), scr_mem,           // 0
@@ -158,181 +122,6 @@ void directions_dlist = {
     DL_LMS(DL_CHR40x8x1), scr_mem + 4 * LINE_LENGTH, // 160
     DL_CHR40x8x1,                                    // 200
     DL_JVB, dlist_mem};
-
-void wait_for_vblank(void)
-{
-    asm("lda $14");
-wvb:
-    asm("cmp $14");
-    asm("beq %g", wvb);
-}
-
-void start_dli(void)
-{
-  ANTIC.nmien = NMIEN_DLI | NMIEN_VBI;
-}
-
-void stop_dli(void)
-{
-  ANTIC.nmien = NMIEN_VBI;
-}
-
-void screen_clear(void)
-{
-  memset(scr_mem, 0, LINE_LENGTH * 25); // TODO: smarter size calculation
-}
-
-void screen_gotoxy(uint8_t x, uint8_t y)
-{
-  col = x;
-  row = y;
-  cursor_ptr = scr_mem + LINE_LENGTH * row + col; // TODO: Dynamic max column
-}
-
-void screen_set_margins(uint8_t left, uint8_t right)
-{
-  min_col = left;
-  max_col = LINE_LENGTH - 1 - right;
-}
-
-void screen_default_margins(void)
-{
-  screen_set_margins(1, 1);
-}
-
-void screen_newline() {
-  // TODO: wrap around to top? scroll? ignore?
-
-  // TODO: optimize by just moving forward based on current position
-  // if (col > max_col) col = max_col;
-  // cursor_ptr += LINE_LENGTH - col + min_col;
-  // col = min_col;
-  // row++;
-
-  screen_gotoxy(min_col, row + 1);
-}
-
-void screen_clear_line(uint8_t y) {
-  memset(scr_mem + y * LINE_LENGTH, 0, LINE_LENGTH);
-}
-
-void screen_back(uint8_t steps)
-{
-  if (col == 0)
-    return;
-  if (steps > col)
-    steps = col;
-  col -= steps;
-  cursor_ptr -= steps;
-}
-
-void screen_putc(char c)
-{
-  if (col > max_col)
-    screen_newline();
-  else
-    col++;
-
-  if (c == CH_NEWLINE)
-    screen_newline();
-  else if (c < 32)
-    POKE(cursor_ptr++, c+64);
-  else if (c < 96)
-    POKE(cursor_ptr++, c-32);
-  else
-    POKE(cursor_ptr++, c);
-}
-
-void screen_puts(char *s) {
-  char c;
-  while ((c = *s++) != '\0')
-    screen_putc(c);
-}
-
-void screen_puts_max(char *s, uint8_t max_length)
-{
-  uint8_t i = 0;
-  char c;
-  while ((c = *s++) != '\0' && i < max_length) {
-    screen_putc(c);
-    i++;
-  }
-}
-
-void screen_puts_center(uint8_t y, char *s) {
-  uint8_t len = strlen(s);
-  uint8_t x = 0;
-  if (len < 39) x = (40 - len) / 2;
-  screen_gotoxy(x, y);
-  screen_puts(s);
-}
-
-void screen_hr(uint8_t length) {
-  // screen_newline();
-  memset(cursor_ptr, SCR_ICON_HLINE, length);
-  // screen_newline();
-}
-
-void screen_pm_draw_icon(uint8_t icon, uint8_t p, uint8_t y) {
-  uint8_t *src = font_ptr + icon * 8;
-  uint8_t *dst = pmg_mem + 0x200 + p * 128 + y;
-  memcpy(dst, src, 8);
-  // memcpy(pmg_mem + 40, font_ptr + 40, 24);
-}
-
-void screen_pm_clear_icon(uint8_t p, uint8_t y) {
-  memset(pmg_mem + 0x200 + p * 128 + y, 0, 8);
-}
-
-uint8_t screen_input_default(char *result, uint8_t max_length, char *start_text)
-{
-  uint8_t err;
-  char c;
-  char *tmp = malloc(max_length + 2);
-  uint8_t i = strlen(start_text);
-
-  strcpy(tmp, start_text);
-
-  while (1) {
-    while (!kbhit());
-    c = cgetc();
-    if (c == CH_ENTER) {
-      err = ERR_OK;
-      break;
-    }
-    else if (c == CH_ESC)
-    {
-      err = ERR_ABORTED;
-      break;
-    }
-    else if (c == CH_DEL || c == CH_CURS_LEFT) {
-      if (i > 0) {
-        i--;
-        cursor_ptr--;
-        tmp[i] = '\0';
-      }
-      POKE(cursor_ptr, 0);
-    }
-    else {
-      screen_putc(c);
-      tmp[i++] = c;
-      // screen_putc('X');
-    }
-  }
-
-  if (err == ERR_OK) {
-    tmp[i] = '\0';
-    strcpy(result, tmp);
-  }
-
-  free(tmp);
-  return err;
-}
-
-uint8_t screen_input(char *result, uint8_t max_length)
-{
-  return screen_input_default(result, max_length, "");
-}
 
 void dli_text(void);
 void dli_logo_top(void);
@@ -556,34 +345,29 @@ void dli_directions_footer(void)
   asm("rti");
 }
 
-void set_dlist_default(void)
+void set_dlist(void *dlist_ptr, uint8_t size)
 {
-  memcpy((void *)dlist_mem, &default_dlist, sizeof(default_dlist));
+  memcpy((void *)dlist_mem, dlist_ptr, size);
 }
 
-void set_dlist_title_text(void)
+void start_dli(void *dli)
 {
-  memcpy((void *)dlist_mem, &title_text_dlist, sizeof(title_text_dlist));
-}
+  // unsigned char prevVal = 0;
+  // save previous val of 0x22F
+  // prevVal = *(unsigned char*)0x22F;
+  // // shut off ANTIC
+  // *(unsigned char*)0X22F = 0;
 
-void set_dlist_logo_with_text(void)
-{
-  memcpy((void *)dlist_mem, &logo_with_text_dlist, sizeof(logo_with_text_dlist));
-}
+  OS.vdslst = dli;
+  // OS.vdslst = &dli_foo;
+  //
+  // OS.vdslst = &dli_logo_top;
 
-void set_dlist_location(void)
-{
-  memcpy((void *)dlist_mem, &destination_dlist, sizeof(destination_dlist));
-}
+  // // restore ANTIC
+  // *(unsigned char*)0x22F = prevVal;
 
-void set_dlist_location_choose_result(void)
-{
-  memcpy((void *)dlist_mem, &destination_choose_result_dlist, sizeof(destination_choose_result_dlist));
-}
-
-void set_dlist_directions(void)
-{
-  memcpy((void *)dlist_mem, &directions_dlist, sizeof(directions_dlist));
+  wait_for_vblank();
+  dli_start();
 }
 
 void init_pmg(void) {
@@ -594,17 +378,12 @@ void init_pmg(void) {
 
   GTIA_WRITE.hposp0 = 60;
   GTIA_WRITE.hposp1 = 120;
-
   // enable players
   GTIA_WRITE.gractl = 3;
-
   // enable single line PMG
-  // OS.sdmctl = 62;
   OS.sdmctl = 46;
-
   // Normal
   OS.gprior = 1;
-  // OS.gprior = 1 + 32;
 
   bzero(pmg_mem, 2048);
 }
@@ -618,7 +397,7 @@ void ui_init(void)
 
   bzero(scr_mem, 40*25);
 
-  set_dlist_default();
+  set_dlist(&default_dlist, sizeof(default_dlist));
   OS.sdlst = (void *)dlist_mem;
 
   screen_default_margins();
@@ -629,83 +408,16 @@ void ui_init(void)
   OS.color2 = CLR_GRAY_DARK;
 }
 
-void start_dli_logo_with_text(void)
-{
-  // unsigned char prevVal = 0;
-  // save previous val of 0x22F
-  // prevVal = *(unsigned char*)0x22F;
-  // // shut off ANTIC
-  // *(unsigned char*)0X22F = 0;
-
-  // // set the dlist screen
-  // memcpy((void *)DISPLAY_LIST, &logo_with_text_dlist, sizeof(logo_with_text_dlist));
-  OS.vdslst = &dli_logo_top;
-
-  // // restore ANTIC
-  // *(unsigned char*)0x22F = prevVal;
-
-  wait_for_vblank();
-  start_dli();
-}
-
-void start_dli_location()
-{
-  // unsigned char prevVal = 0;
-  // save previous val of 0x22F
-  // prevVal = *(unsigned char*)0x22F;
-  // // shut off ANTIC
-  // *(unsigned char*)0X22F = 0;
-
-  // // set the dlist screen
-  // memcpy((void *)DISPLAY_LIST, &logo_with_text_dlist, sizeof(logo_with_text_dlist));
-
-  OS.vdslst = &dli_location_logo_top;
-  // OS.vdslst = &dli_foo;
-  //
-  // OS.vdslst = &dli_logo_top;
-
-  // // restore ANTIC
-  // *(unsigned char*)0x22F = prevVal;
-
-  wait_for_vblank();
-  start_dli();
-}
-
-void start_dli_directions()
-{
-  // unsigned char prevVal = 0;
-  // save previous val of 0x22F
-  // prevVal = *(unsigned char*)0x22F;
-  // // shut off ANTIC
-  // *(unsigned char*)0X22F = 0;
-
-  // // set the dlist screen
-  // memcpy((void *)DISPLAY_LIST, &logo_with_text_dlist, sizeof(logo_with_text_dlist));
-
-  OS.vdslst = &dli_directions_header_1;
-  // OS.vdslst = &dli_foo;
-  //
-  // OS.vdslst = &dli_logo_top;
-
-  // // restore ANTIC
-  // *(unsigned char*)0x22F = prevVal;
-
-  wait_for_vblank();
-  start_dli();
-}
-
-
-
 void ui_screen_splash() {
   screen_clear();
-  set_dlist_logo_with_text();
-  start_dli_logo_with_text();
+  set_dlist(&logo_with_text_dlist, sizeof(logo_with_text_dlist));
+  start_dli(&dli_logo_top);
 }
 
 void ui_screen_settings() {
   screen_clear();
-  set_dlist_logo_with_text();
-  start_dli_logo_with_text();
+  set_dlist(&logo_with_text_dlist, sizeof(logo_with_text_dlist));
+  start_dli(&dli_logo_top);
 
   screen_puts_center(6, "SERVER");
   screen_puts_center(8, settings.server);
@@ -719,9 +431,9 @@ void ui_screen_settings_menu_default() {
 void ui_screen_destination()
 {
   color = CLR_RED;
-  stop_dli();
-  start_dli_location();
-  set_dlist_location();
+  dli_stop();
+  start_dli(&dli_location_logo_top);
+  set_dlist(&destination_dlist, sizeof(destination_dlist));
 
   screen_clear();
   screen_puts_center(5, "DESTINATION");
@@ -730,9 +442,9 @@ void ui_screen_destination()
 
 void ui_screen_origin() {
   color = CLR_BLUE;
-  stop_dli();
-  start_dli_location();
-  set_dlist_location();
+  dli_stop();
+  start_dli(&dli_location_logo_top);
+  set_dlist(&destination_dlist, sizeof(destination_dlist));
 
   screen_clear();
   screen_puts_center(5, "STARTING POINT");
@@ -773,9 +485,9 @@ uint8_t ui_screen_location_choose_result(uint8_t *choice, struct Location *resul
   uint8_t err;
   char c;
 
-  stop_dli();
-  set_dlist_location_choose_result();
-  start_dli_location();
+  dli_stop();
+  set_dlist(&destination_choose_result_dlist, sizeof(destination_choose_result_dlist));
+  start_dli(&dli_location_logo_top);
 
   screen_clear();
   screen_set_margins(3, 0);
@@ -789,8 +501,6 @@ uint8_t ui_screen_location_choose_result(uint8_t *choice, struct Location *resul
     screen_puts_max(results[i]->desc, 36);
     screen_newline();
     screen_puts_max(results[i]->addr, 36);
-    // printf("%d: %s\n", i + 1, *results[i].desc);
-      // printf("   %s\n", *results[i].addr);
   }
   screen_default_margins();
 
@@ -810,23 +520,16 @@ uint8_t ui_screen_location_choose_result(uint8_t *choice, struct Location *resul
     }
   }
 
-  set_dlist_location();
+  set_dlist(&destination_dlist, sizeof(destination_dlist));
   return err;
 }
 
 void ui_screen_route_options(struct RouteOptions *options) {
-  // char input[80];
-  // char c;
-
   screen_clear();
   screen_puts("ROUTE OPTIONS");
 
   screen_puts("Mode: ");
   screen_puts(options->mode);
-  // readline(&input);
-  // if (input[0] != '\0') {
-  //   strcpy(options->mode, input);
-  // }
 }
 
 void ui_screen_routing() {
@@ -848,9 +551,9 @@ void ui_screen_directions_show_header() {
 }
 
 void ui_screen_directions() {
-  stop_dli();
-  set_dlist_directions();
-  start_dli_directions();
+  dli_stop();
+  set_dlist(&directions_dlist, sizeof(directions_dlist));
+  start_dli(&dli_directions_header_1);
 
   screen_clear();
   ui_screen_directions_show_header();
@@ -1030,8 +733,8 @@ void ui_screen_directions_menu_default()
 }
 
 void ui_screen_print() {
-  stop_dli();
-  set_dlist_default();
+  dli_stop();
+  set_dlist(&default_dlist, sizeof(default_dlist));
   screen_clear();
 
   screen_gotoxy(0, 0);
