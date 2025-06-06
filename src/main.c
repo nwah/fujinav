@@ -1,17 +1,11 @@
 #include <conio.h>
-#include <stdint.h>
 #include <stdbool.h>
-#include <ctype.h>
-#include <string.h>
-#include <stdio.h>
 #include <fujinet-network.h>
-#include "util.h"
 #include "api.h"
 #include "globals.h"
 #include "check_settings.h"
 #include "edit_settings.h"
 #include "set_location.h"
-#include "set_route_options.h"
 #include "view_directions.h"
 #include "print_directions.h"
 #include "view_qr_code.h"
@@ -51,9 +45,6 @@ int main() {
         break;
       case SET_ORIGIN:
         set_origin();
-        break;
-      case SET_ROUTE_OPTIONS:
-        set_route_options();
         break;
       case VIEW_DIRECTIONS:
         view_directions();
