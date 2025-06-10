@@ -138,37 +138,52 @@ void screen_pm_clear_icon(uint8_t p, uint8_t y) {
 
 uint8_t screen_input_default(char *result, uint8_t max_length, char *start_text)
 {
-  uint8_t err;
+  uint8_t err = ERR_OK;
   char c;
   char *tmp = malloc(max_length + 2);
   uint8_t i = strlen(start_text);
 
+  screen_puts(start_text);
+  // screen_gotoxy(col + i, row);
+  POKE(cursor_ptr, 128);
+
   strcpy(tmp, start_text);
 
   while (1) {
+    // For some reason kbhit() was letting garbage through
+    // while (OS.ch == 255);
     while (!kbhit());
     c = cgetc();
+    // OS.ch = 255;
+
     if (c == CH_ENTER) {
-      err = ERR_OK;
+      POKE(cursor_ptr, 0);
       break;
     }
     else if (c == CH_ESC)
     {
+      POKE(cursor_ptr, 0);
       err = ERR_ABORTED;
       break;
     }
-    else if (c == CH_DEL || c == CH_CURS_LEFT) {
-      if (i > 0) {
-        i--;
-        cursor_ptr--;
-        tmp[i] = '\0';
-      }
+    else if (i > 0 && (c == CH_DEL || c == CH_CURS_LEFT)) {
       POKE(cursor_ptr, 0);
+      i--;
+      cursor_ptr--;
+      tmp[i] = '\0';
+      POKE(cursor_ptr, 128);
+
+      if (col == 0) {
+        col = max_col;
+      } else {
+        col--;
+      }
     }
-    else {
+    else if (i < max_length && c >= ' ' && c <= '|') {
       screen_putc(c);
+      POKE(cursor_ptr, 128);
       tmp[i++] = c;
-      // screen_putc('X');
+      tmp[i] = '\0';
     }
   }
 

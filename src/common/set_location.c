@@ -1,11 +1,9 @@
 #include <conio.h>
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include "api.h"
 #include "typedefs.h"
 #include "set_location.h"
-#include "util.h"
 #include "globals.h"
 #include "ui.h"
 
@@ -26,16 +24,19 @@ uint8_t get_loc(Location *loc)
     {
         results_ptrs[i] = &results[i];
     }
-    ui_screen_location_input_query(&query);
+
+    err = ui_screen_location_input_query(&query);
+    if (err == ERR_ABORTED) {
+      return err;
+    }
 
     ui_screen_location_show_searching();
-    // printf("Searching...\n");
     api_geocode(query, results_ptrs, &num_results);
 
     if (num_results == 0)
     {
         ui_screen_location_show_no_matches();
-      // printf("No matches found.\n");
+        cgetc();
         return ERR_NOT_FOUND;
     }
     else if (num_results == 1)
@@ -60,9 +61,16 @@ void set_origin(void) {
     ui_screen_origin_menu_default();
 
     err = get_loc(&fromLoc);
+
+    if (err == ERR_ABORTED) {
+      state = SET_DESTINATION;
+    }
+
     if (err != ERR_OK) {
         return;
     }
+
+    strcpy(routeOptions.country, fromLoc.country);
 
     state = VIEW_DIRECTIONS;
 }
@@ -75,6 +83,11 @@ void set_destination(void)
     ui_screen_destination_menu_default();
 
     err = get_loc(&toLoc);
+
+    if (err == ERR_ABORTED) {
+      state = EDIT_SETTINGS;
+    }
+
     if (err != ERR_OK) {
         return;
     }

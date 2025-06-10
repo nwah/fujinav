@@ -11,6 +11,13 @@ void ui_screen_splash();
 
 void ui_screen_settings();
 void ui_screen_settings_menu_default();
+uint8_t ui_screen_settings_edit_server(char *query);
+void ui_screen_settings_show_error(char *msg);
+void ui_screen_settings_focus_none();
+void ui_screen_settings_focus_server();
+void ui_screen_settings_focus_units();
+void ui_screen_settings_render_units();
+void ui_screen_settings_render_server();
 
 void ui_screen_destination();
 void ui_screen_destination_menu_default();

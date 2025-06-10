@@ -11,6 +11,8 @@
 #include "ui.h"
 #include "screen.h"
 
+uint8_t highlighted_row = 0xFF;
+
 void default_dlist = {
     DL_BLK8, DL_BLK8, DL_BLK8,
     DL_LMS(DL_CHR40x8x1), scr_mem,
@@ -58,14 +60,24 @@ void title_text_dlist = {
 void dli_text(void);
 void dli_logo_top(void);
 void dli_logo_bottom(void);
+void dli_highlight_start(void);
+void dli_highlight_stop(void);
 
 void dli_text(void)
 {
  	asm("pha");
+  asm("txa");
+  asm("pha");
   asm("lda #$02");  // dark grey
   asm("sta $D40A"); // WSYNC
   asm("sta $D018"); // COLOR2
-  OS.vdslst = &dli_logo_top;
+  if (highlighted_row == 0xFF) {
+    OS.vdslst = &dli_logo_top;
+  } else {
+    OS.vdslst = &dli_highlight_start;
+  }
+  asm("pla");
+  asm("tax");
   asm("pla");
   asm("rti");
 }
@@ -73,6 +85,8 @@ void dli_text(void)
 void dli_logo_top(void)
 {
  	asm("pha");
+  asm("txa");
+  asm("pha");
   asm("lda #$96");  // blue
   asm("sta $D40A"); // WSYNC
   asm("sta $D018"); // COLOR2
@@ -80,16 +94,52 @@ void dli_logo_top(void)
   // asm("sta $D017"); //COLOR2
   OS.vdslst = &dli_logo_bottom;
   asm("pla");
+  asm("tax");
+  asm("pla");
   asm("rti");
 }
 
 void dli_logo_bottom(void)
 {
  	asm("pha");
+  asm("txa");
+  asm("pha");
   asm("lda #$36");  // red
   asm("sta $D40A"); // WSYNC
   asm("sta $D018"); //COLOR2
   OS.vdslst = &dli_text;
+  asm("pla");
+  asm("tax");
+  asm("pla");
+  asm("rti");
+}
+
+void dli_highlight_start(void)
+{
+ 	asm("pha");
+  asm("txa");
+  asm("pha");
+  asm("lda #$04");  // medium grey
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D018"); // COLOR2
+  OS.vdslst = &dli_highlight_stop;
+  asm("pla");
+  asm("tax");
+  asm("pla");
+  asm("rti");
+}
+
+void dli_highlight_stop(void)
+{
+ 	asm("pha");
+  asm("txa");
+  asm("pha");
+  asm("lda #$02");  // dark grey
+  asm("sta $D40A"); // WSYNC
+  asm("sta $D018"); // COLOR2
+  OS.vdslst = &dli_logo_top;
+  asm("pla");
+  asm("tax");
   asm("pla");
   asm("rti");
 }
@@ -123,7 +173,27 @@ void start_dli(void *dli)
 
 void set_dlist_dli_logo_with_text(void)
 {
+  dli_stop();
   set_dlist(&logo_with_text_dlist, sizeof(logo_with_text_dlist));
+  start_dli(&dli_logo_top);
+}
+
+void highlight_row(uint8_t row)
+{
+  uint8_t *row_addr = dlist_mem + 24 + row;
+  highlighted_row = row;
+
+  if (row == 0xFF) {
+    set_dlist_dli_logo_with_text();
+    return;
+  }
+
+  dli_stop();
+  set_dlist(&logo_with_text_dlist, sizeof(logo_with_text_dlist));
+
+  POKE(row_addr, DL_DLI(DL_CHR40x8x1));
+  POKE(row_addr + 1, DL_DLI(DL_CHR40x8x1));
+
   start_dli(&dli_logo_top);
 }
 

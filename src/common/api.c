@@ -2,16 +2,17 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <fujinet-fuji.h>
 #include <fujinet-network.h>
 #include "api.h"
 #include "globals.h"
 #include "typedefs.h"
 
-// #define GEOCODE_URL "N:HTTP://localhost:8080/nav/geocode"
-// #define ROUTE_URL "N:HTTP://localhost:8080/nav/route"
-#define GEOCODE_URL "N:HTTP://svart.local:8080/nav/geocode"
-#define ROUTE_URL "N:HTTP://svart.local:8080/nav/route"
+#define GEOCODE_PATH "/nav/geocode"
+#define ROUTE_PATH   "/nav/route"
 #define CHAR_NL 0x9B
+#define MAX_STEPS 32
+#define MAX_INSTRUCTION 128
 
 char buf[3072];
 char reqBody[128];
@@ -60,34 +61,38 @@ uint8_t api_geocode(char *query, struct Location *results[], uint8_t *num_result
   uint8_t status;
   uint16_t bw;
   char *c;
+  char url[128] = "N:";
+
+  strcat(url, settings.server);
+  strcat(url, GEOCODE_PATH);
 
   bufsize = 0;
   memset(buf, 0, sizeof(buf));
 
-  err = network_open(GEOCODE_URL, OPEN_MODE_HTTP_POST, OPEN_TRANS_LF);
+  err = network_open(url, OPEN_MODE_HTTP_POST, OPEN_TRANS_LF);
   if (err) {
     return err;
   }
 
-  err = network_http_post(GEOCODE_URL, query);
+  err = network_http_post(url, query);
   if (err) {
-    network_close(GEOCODE_URL);
+    network_close(url);
     return err;
   }
 
-  network_status(GEOCODE_URL, &bw, &status, &err);
+  network_status(url, &bw, &status, &err);
   if (err) {
-    network_close(GEOCODE_URL);
+    network_close(url);
     return err;
   }
 
-  err = network_read(GEOCODE_URL, &buf, bw);
+  err = network_read(url, &buf, bw);
   if (err < 0) {
-    network_close(GEOCODE_URL);
+    network_close(url);
     return -err;
   }
 
-  network_close(GEOCODE_URL);
+  network_close(url);
 
   bufsize += bw;
   parse_geocode_response(num_results, results);
@@ -96,29 +101,23 @@ uint8_t api_geocode(char *query, struct Location *results[], uint8_t *num_result
 }
 
 void parse_route_response() {
-  char line[128];
+  char line[MAX_INSTRUCTION];
   char *bufp = buf;
   uint8_t i;
 
-  // Get duration
   bufp += get_line(bufp, directions.duration) + 1;
-  
-  // Get distance
   bufp += get_line(bufp, directions.distance) + 1;
-  
-  // Get number of steps
+
   bufp += get_line(bufp, line) + 1;
   directions.num_steps = atoi(line);
-  if (directions.num_steps > 32) {
-    directions.num_steps = 32;
+  if (directions.num_steps > MAX_STEPS) {
+    directions.num_steps = MAX_STEPS;
   }
-  
-  // Parse each step
+
   for (i = 0; i < directions.num_steps; i++) {
-    // Get icon
     bufp += get_line(bufp, line) + 1;
     directions.steps[i].icon = line[0];
-    // Get instructions
+
     bufp += get_line(bufp, line) + 1;
     strcpy(directions.steps[i].instructions, line);
   }
@@ -129,6 +128,10 @@ uint8_t api_route(char *fromLatLng, char *toLatLng, RouteOptions *options) {
   uint8_t status;
   uint16_t bw;
   uint16_t to_read = 512;
+  char url[128] = "N:";
+
+  strcat(url, settings.server);
+  strcat(url, ROUTE_PATH);
 
   bufsize = 0;
   memset(buf, 0, sizeof(buf));
@@ -142,21 +145,21 @@ uint8_t api_route(char *fromLatLng, char *toLatLng, RouteOptions *options) {
            fromLatLng,
            toLatLng);
 
-  err = network_open(ROUTE_URL, OPEN_MODE_HTTP_POST, OPEN_TRANS_LF);
+  err = network_open(url, OPEN_MODE_HTTP_POST, OPEN_TRANS_LF);
   if (err) {
     return err;
   }
 
   // printf("%s", reqBody);
-  err = network_http_post(ROUTE_URL, reqBody);
+  err = network_http_post(url, reqBody);
   if (err) {
-    network_close(ROUTE_URL);
+    network_close(url);
     return err;
   }
 
-  network_status(ROUTE_URL, &bw, &status, &err);
+  network_status(url, &bw, &status, &err);
   if (err) {
-    network_close(ROUTE_URL);
+    network_close(url);
     return err;
   }
 
@@ -170,17 +173,17 @@ uint8_t api_route(char *fromLatLng, char *toLatLng, RouteOptions *options) {
     if (to_read == 0) {
       break;
     }
-    err = network_read(ROUTE_URL, &buf[bufsize], to_read);
+    err = network_read(url, &buf[bufsize], to_read);
     if (err < 0) {
-      network_close(ROUTE_URL);
+      network_close(url);
       return -err;
     }
     bufsize += to_read;
 
-    network_status(ROUTE_URL, &bw, &status, &err);
+    network_status(url, &bw, &status, &err);
   }
 
-  network_close(ROUTE_URL);
+  network_close(url);
 
   parse_route_response();
 

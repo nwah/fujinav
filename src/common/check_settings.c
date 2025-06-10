@@ -9,11 +9,10 @@
 
 void init_defaults()
 {
-    // strcpy(routeOptions.mode, "transit");
+    strcpy(settings.server, "http://localhost:8080");
     strcpy(routeOptions.mode, "driving");
     strcpy(routeOptions.country, "us");
     strcpy(routeOptions.units, "mi");
-    strcpy(settings.server, "http://svart.local:8080");
 }
 
 int load_settings()
@@ -21,7 +20,6 @@ int load_settings()
     uint8_t size = 0;
     bool ok = false;
     char buf[66];
-    printf("Loading settings...\n");
     fuji_set_appkey_details(APPKEY_CREATOR_ID, APPKEY_APP_ID, DEFAULT);
 
     ok = fuji_read_appkey(APPKEY_ID_API_URL, &size, buf);
@@ -29,17 +27,23 @@ int load_settings()
         return ERR_NOT_FOUND;
     }
     strcpy(settings.server, buf);
-    printf("Server: %s\n", settings.server);
+    settings.server[size] = '\0';
+
     ok = fuji_read_appkey(APPKEY_ID_COUNTRY, &size, buf);
     if (ok) {
         strcpy(routeOptions.country, buf);
     }
-    printf("Country: %s\n", routeOptions.country);
+
     ok = fuji_read_appkey(APPKEY_ID_UNITS, &size, buf);
     if (ok) {
         strcpy(routeOptions.units, buf);
     }
-    printf("Units: %s\n", routeOptions.units);
+
+    ok = fuji_read_appkey(APPKEY_ID_MODE, &size, buf);
+    if (ok) {
+        strcpy(routeOptions.mode, buf);
+    }
+
     return ERR_OK;
 }
 
@@ -56,4 +60,5 @@ void check_settings(void) {
     }
 
     state = SET_DESTINATION;
+    // state = EDIT_SETTINGS;
 }

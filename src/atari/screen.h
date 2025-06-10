@@ -78,6 +78,7 @@
 extern unsigned char dlist_mem[];
 extern unsigned char scr_mem[];
 extern unsigned char pmg_mem[];
+extern unsigned char font_mem[];
 extern unsigned char logo_data[640];
 
 extern uint8_t row;

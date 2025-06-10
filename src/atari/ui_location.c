@@ -77,8 +77,6 @@ void dli_location_logo_top(void)
   asm("lda #$96");  // blue
   asm("sta $D40A"); // WSYNC
   asm("sta $D018"); // COLOR2
-  // asm("lda #$66");
-  // asm("sta $D017"); //COLOR2
   OS.vdslst = &dli_location_logo_bottom;
   asm("pla");
   asm("tax");
@@ -157,7 +155,6 @@ void ui_screen_destination()
 
   screen_clear();
   screen_puts_center(5, "DESTINATION");
-  screen_gotoxy(2, 7);
 }
 
 void ui_screen_origin() {
@@ -168,26 +165,23 @@ void ui_screen_origin() {
 
   screen_clear();
   screen_puts_center(5, "STARTING POINT");
-  screen_gotoxy(2, 7);
 }
 
 void ui_screen_destination_menu_default()
 {
   screen_clear_line(12);
-  screen_puts_center(18, CH_KEY_LABEL_L CH_INV_C CH_KEY_LABEL_R "Config " CH_KEY_RETURN "Search");
+  screen_puts_center(18, CH_KEY_ESC "Settings " CH_KEY_RETURN "Continue");
 }
 
 void ui_screen_origin_menu_default()
 {
   screen_clear_line(12);
-  screen_puts_center(18, CH_KEY_ESC "Back " CH_KEY_RETURN "Search");
+  screen_puts_center(18, CH_KEY_ESC "Back " CH_KEY_RETURN "Continue");
 }
 
 uint8_t ui_screen_location_input_query(char *query) {
-  uint8_t err;
   screen_gotoxy(2, 7);
-  err = screen_input(query, 36);
-  return ERR_OK;
+  return screen_input(query, 36);
 }
 
 void ui_screen_location_show_searching() {
@@ -197,7 +191,7 @@ void ui_screen_location_show_searching() {
 
 void ui_screen_location_show_no_matches() {
   screen_clear_line(7);
-  screen_puts_center(7, "No matches found.");
+  screen_puts_center(7, "No matches found");
 }
 
 uint8_t ui_screen_location_choose_result(uint8_t *choice, struct Location *results[], uint8_t num_results) {

@@ -1,13 +1,19 @@
-#include <conio.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <conio.h>
+#include <fujinet-fuji.h>
 #include "view_directions.h"
 #include "api.h"
 #include "globals.h"
 #include "typedefs.h"
 #include "ui.h"
 #include "printer.h"
+
+void set_mode(char *mode) {
+  strcpy(routeOptions.mode, mode);
+  fuji_write_appkey(APPKEY_ID_MODE, strlen(mode), mode);
+}
 
 void view_directions(void) {
     char c;
@@ -27,21 +33,21 @@ void view_directions(void) {
       switch (c) {
         case 't':
         case 'T':
-          strcpy(routeOptions.mode, MODE_TRANSIT);
+          set_mode(MODE_TRANSIT);
           break;
         case 'b':
         case 'B':
-          strcpy(routeOptions.mode, MODE_BIKING);
+          set_mode(MODE_BIKING);
           break;
         case 'd':
         case 'D':
         case 'c':
         case 'C':
-          strcpy(routeOptions.mode, MODE_DRIVING);
+          set_mode(MODE_DRIVING);
           break;
         case 'w':
         case 'W':
-          strcpy(routeOptions.mode, MODE_WALKING);
+          set_mode(MODE_WALKING);
           break;
         case CH_ESC:
           state = SET_DESTINATION;
@@ -60,8 +66,8 @@ void view_directions(void) {
           break;
         case 'p':
         case 'P':
-            state = PRINT_DIRECTIONS;
-            break;
+          state = PRINT_DIRECTIONS;
+          break;
         default:
           waiting = true;
           break;

@@ -15,17 +15,6 @@
 char *version = "1.0.0";
 
 int main() {
-  // FILE *printer = fopen("P1:", "w");
-  // fprintf(printer, "Hello world\n");
-  // fprintf(printer, "Hello world\n");
-  // fprintf(printer, "Hello world\n");
-  // fclose(printer);
-  // printer_open();
-  // printer_print("Hello, world!");
-  // printer_close();
-
-  // cgetc();
-
   network_init();
   ui_init();
 

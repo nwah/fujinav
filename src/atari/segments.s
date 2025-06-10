@@ -11,3 +11,7 @@ _dlist_mem:
 	.export		_scr_mem
 .segment	"SCRMEM"
 _scr_mem:
+
+    .export		_font_mem
+.segment	"FONTMEM"
+_font_mem:

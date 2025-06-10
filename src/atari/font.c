@@ -4,6 +4,7 @@
 #include <peekpoke.h>
 
 #include "font.h"
+#include "screen.h"
 
 #define FONT_SIZE 1024
 #define PATCH_OFFSET 64 * 8
@@ -45,14 +46,10 @@ const unsigned char font_patch[] = {
 };
 
 void patch_font(void) {
-	// Allocation space on 1k boundary
-	char *font_mem[2 * FONT_SIZE - 1];
-	char *patched = (char *)(((unsigned int)font_mem + FONT_SIZE - 1) & 0xFC00);
-	
 	char *original = (char *)(PEEK(756) << 8);
 
-	memcpy(patched, original, FONT_SIZE);
-	memcpy(patched + PATCH_OFFSET, font_patch, sizeof(font_patch));
+	memcpy(font_mem, original, FONT_SIZE);
+	memcpy(font_mem + PATCH_OFFSET, font_patch, sizeof(font_patch));
 
-	POKE(756, ((unsigned int)patched) >> 8);
+	POKE(756, ((unsigned int)font_mem) >> 8);
 }

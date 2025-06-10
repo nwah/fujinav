@@ -6,6 +6,7 @@
 #define APPKEY_ID_API_URL 0x01
 #define APPKEY_ID_COUNTRY 0x02
 #define APPKEY_ID_UNITS 0x03
+#define APPKEY_ID_MODE 0x04
 
 #define KEY_ABORT 27
 
