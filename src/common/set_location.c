@@ -7,17 +7,19 @@
 #include "globals.h"
 #include "ui.h"
 
+uint8_t num_results = 0;
 static Location results[5];
 static Location *results_ptrs[5];
 
 uint8_t get_loc(Location *loc)
 {
-    uint8_t num_results = 0;
     char query[40];
     char c;
     uint8_t i = 0;
     uint8_t choice = 0;
     uint8_t err = 0;
+
+    num_results = 0;
 
     // Initialize pointers array
     for (i = 0; i < 5; i++)
@@ -62,7 +64,7 @@ void set_origin(void) {
 
     err = get_loc(&fromLoc);
 
-    if (err == ERR_ABORTED) {
+    if (err == ERR_ABORTED && num_results == 0) {
       state = SET_DESTINATION;
     }
 
@@ -84,7 +86,7 @@ void set_destination(void)
 
     err = get_loc(&toLoc);
 
-    if (err == ERR_ABORTED) {
+    if (err == ERR_ABORTED && num_results == 0) {
       state = EDIT_SETTINGS;
     }
 

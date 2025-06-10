@@ -9,8 +9,8 @@
 
 void init_defaults()
 {
-    strcpy(settings.server, "http://localhost:8080");
-    strcpy(routeOptions.mode, "driving");
+    strcpy(settings.server, "http://fuji.noahburney.net");
+    strcpy(routeOptions.mode, MODE_DRIVING);
     strcpy(routeOptions.country, "us");
     strcpy(routeOptions.units, "mi");
 }

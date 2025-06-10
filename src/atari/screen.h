@@ -46,6 +46,7 @@
 #define CH_INV_Y "\xB9"
 #define CH_INV_Z "\xBA"
 
+#define CH_INV_MINUS "\x8D"
 #define CH_INV_1 "\x91"
 #define CH_INV_2 "\x92"
 #define CH_INV_3 "\x93"

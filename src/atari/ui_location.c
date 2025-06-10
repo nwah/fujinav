@@ -179,6 +179,14 @@ void ui_screen_origin_menu_default()
   screen_puts_center(18, CH_KEY_ESC "Back " CH_KEY_RETURN "Continue");
 }
 
+void ui_screen_location_menu_choose()
+{
+  screen_clear_line(12);
+  screen_puts_center(18,
+    CH_KEY_ESC "Back "
+    CH_KEY_LABEL_L CH_INV_1 CH_INV_MINUS CH_INV_4 CH_KEY_LABEL_R "Choose");
+}
+
 uint8_t ui_screen_location_input_query(char *query) {
   screen_gotoxy(2, 7);
   return screen_input(query, 36);
@@ -205,6 +213,8 @@ uint8_t ui_screen_location_choose_result(uint8_t *choice, struct Location *resul
 
   screen_clear();
   screen_set_margins(3, 0);
+
+  ui_screen_location_menu_choose();
 
   for (i = 0; i < num_results; i++)
   {

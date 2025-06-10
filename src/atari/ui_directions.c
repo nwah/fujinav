@@ -155,11 +155,11 @@ void ui_screen_directions_show_results()
 
   screen_gotoxy(1, 2);
   // Set default icon based on mode
-  if (strcmp(routeOptions.mode, "Biking") == 0) {
+  if (routeOptions.mode[0] == 'B') {
     default_icon = CH_ICON_BIKE;
-  } else if (strcmp(routeOptions.mode, "Driving") == 0) {
+} else if (routeOptions.mode[0] == 'D') {
     default_icon = CH_ICON_CAR;
-  } else if (strcmp(routeOptions.mode, "Walking") == 0) {
+  } else if (routeOptions.mode[0] == 'W') {
     default_icon = CH_ICON_WALK;
   } else {
     default_icon = CH_ICON_RAIL;
@@ -285,8 +285,10 @@ void ui_screen_directions_menu_default()
     CH_KEY_ESC "Back "
     CH_KEY_LABEL_L
       CH_INV_C CH_INV_T CH_INV_B CH_INV_W
-    CH_KEY_LABEL_R "C R " CH_ICON_BIKE_S " " CH_ICON_WALK_S " "
-    CH_KEY_LABEL_L CH_INV_UP CH_INV_DOWN CH_KEY_LABEL_R "Scroll"
+    CH_KEY_LABEL_R
+      "C R " CH_ICON_BIKE_S " " CH_ICON_WALK_S
+    CH_KEY_LABEL_L CH_INV_UP CH_INV_DOWN CH_KEY_LABEL_R "Scroll "
+    CH_KEY_LABEL_L CH_INV_P "rint"
   };
   // cc65 ASCII conversion is treating 0x0A as a \n and converting it to a newline
   label[16] = CH_ICON_CAR;

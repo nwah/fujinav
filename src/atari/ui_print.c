@@ -15,11 +15,14 @@ void ui_screen_print() {
 
   screen_clear_line(8);
   screen_puts_center(8, "Press any key to print");
+
+  screen_puts_center(16, CH_KEY_ESC "Cancel");
 }
 
 void ui_screen_print_show_printing()
 {
   screen_clear_line(8);
+  screen_clear_line(16);
   screen_puts_center(8, "Printing...");
 }
 
@@ -27,4 +30,6 @@ void ui_screen_print_show_finished()
 {
   screen_clear_line(8);
   screen_puts_center(8, "Finished...");
+
+  screen_puts_center(16, "Press any key to continue");
 }

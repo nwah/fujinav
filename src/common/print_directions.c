@@ -10,13 +10,18 @@
 char output[2048];
 
 void print_directions(void) {
+    char c;
     FILE *printer;
     uint8_t i = 0;
     char *outp = &output[0];
 
     ui_screen_print();
 
-    cgetc();
+    c = cgetc();
+    if (c == CH_ESC) {
+      state = VIEW_DIRECTIONS;
+      return;
+    }
 
     ui_screen_print_show_printing();
 
