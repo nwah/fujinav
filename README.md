@@ -1,6 +1,12 @@
-# fujinav
+# FujiNav
 
-It's time to write your docs about YOUR AWESOME APP!
+Get navigation directions on your vintage computer with [FujiNet](https://fujinet.online).
+
+![FujiNav main screen](docs/fujinav-1.png) ![FujiNav directions](docs/fujinav-2.png)
+
+
+## Self-hosting server
+The server is configurable. If you would like to run your own instance, see https://github.com/nwah/fujisuite-server
 
 ## building
 
