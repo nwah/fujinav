@@ -1,7 +1,7 @@
 # Sample Makefile For FujiNet Applications
 
 # TARGETS = atari apple2enh apple2 c64
-TARGETS = atari
+TARGETS = atari apple2enh
 PROGRAM := fujinav
 
 # Set this to the version of FN-LIB you wish to use in this project:

@@ -2,7 +2,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <conio.h>
-#include <atari.h>
 #include <fujinet-fuji.h>
 #include "edit_settings.h"
 #include "globals.h"

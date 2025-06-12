@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include "api.h"
-#include "globals.h"
 
 void ui_init(void);
 

@@ -8,7 +8,10 @@
 #include "globals.h"
 #include "typedefs.h"
 #include "ui.h"
+
+#ifdef __ATARI__
 #include "printer.h"
+#endif
 
 void set_mode(char *mode) {
   strcpy(routeOptions.mode, mode);

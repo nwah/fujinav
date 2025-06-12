@@ -4,13 +4,21 @@
 #include <stdio.h>
 #include <fujinet-fuji.h>
 #include <fujinet-network.h>
+
+#ifdef __APPLE2__
+#include <apple2.h>
+#endif
+#ifdef __ATARI__
+#include <atari.h>
+#endif
+
 #include "api.h"
 #include "globals.h"
 #include "typedefs.h"
 
 #define GEOCODE_PATH "/nav/geocode"
 #define ROUTE_PATH   "/nav/route"
-#define CHAR_NL 0x9B
+// #define CHAR_NL 0x9B
 #define MAX_STEPS 32
 #define MAX_INSTRUCTION 128
 
@@ -29,7 +37,7 @@ uint16_t get_until(char delimiter, char *buf, char *result) {
 }
 
 uint16_t get_line(char *buf, char *line) {
-  return get_until((char)CHAR_NL, buf, line);
+  return get_until((char)CH_ENTER, buf, line);
 }
 
 void parse_geocode_response(uint8_t *num_results, struct Location *results[]) {
@@ -70,27 +78,27 @@ uint8_t api_geocode(char *query, struct Location *results[], uint8_t *num_result
   memset(buf, 0, sizeof(buf));
 
   err = network_open(url, OPEN_MODE_HTTP_POST, OPEN_TRANS_LF);
-  if (err) {
-    return err;
-  }
+  // if (err) {
+  //   return err;
+  // }
 
   err = network_http_post(url, query);
-  if (err) {
-    network_close(url);
-    return err;
-  }
+  // if (err) {
+  //   network_close(url);
+  //   return err;
+  // }
 
   network_status(url, &bw, &status, &err);
-  if (err) {
-    network_close(url);
-    return err;
-  }
+  // if (err) {
+  //   network_close(url);
+  //   return err;
+  // }
 
   err = network_read(url, &buf, bw);
-  if (err < 0) {
-    network_close(url);
-    return -err;
-  }
+  // if (err < 0) {
+  //   network_close(url);
+  //   return -err;
+  // }
 
   network_close(url);
 
@@ -146,22 +154,22 @@ uint8_t api_route(char *fromLatLng, char *toLatLng, RouteOptions *options) {
            toLatLng);
 
   err = network_open(url, OPEN_MODE_HTTP_POST, OPEN_TRANS_LF);
-  if (err) {
-    return err;
-  }
+  // if (err) {
+  //   return err;
+  // }
 
   // printf("%s", reqBody);
   err = network_http_post(url, reqBody);
-  if (err) {
-    network_close(url);
-    return err;
-  }
+  // if (err) {
+  //   network_close(url);
+  //   return err;
+  // }
 
   network_status(url, &bw, &status, &err);
-  if (err) {
-    network_close(url);
-    return err;
-  }
+  // if (err) {
+  //   network_close(url);
+  //   return err;
+  // }
 
   while (bw > 0) {
     if (to_read > bw) {
@@ -174,10 +182,10 @@ uint8_t api_route(char *fromLatLng, char *toLatLng, RouteOptions *options) {
       break;
     }
     err = network_read(url, &buf[bufsize], to_read);
-    if (err < 0) {
-      network_close(url);
-      return -err;
-    }
+    // if (err < 0) {
+    //   network_close(url);
+    //   return -err;
+    // }
     bufsize += to_read;
 
     network_status(url, &bw, &status, &err);

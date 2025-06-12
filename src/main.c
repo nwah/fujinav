@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <fujinet-network.h>
 #include "api.h"
+#include "common/typedefs.h"
 #include "globals.h"
 #include "check_settings.h"
 #include "edit_settings.h"
@@ -18,8 +19,7 @@ int main() {
   network_init();
   ui_init();
 
-  // ui_screen_splash();
-  // while(1){}
+  state = CHECK_SETTINGS;
 
   while (1) {
     switch (state) {

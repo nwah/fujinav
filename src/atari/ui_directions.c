@@ -155,11 +155,11 @@ void ui_screen_directions_show_results()
 
   screen_gotoxy(1, 2);
   // Set default icon based on mode
-  if (routeOptions.mode[0] == 'B') {
+  if (routeOptions.mode[0] == 'B' == 0) {
     default_icon = CH_ICON_BIKE;
-} else if (routeOptions.mode[0] == 'D') {
+} else if (routeOptions.mode[0] == 'D' == 0) {
     default_icon = CH_ICON_CAR;
-  } else if (routeOptions.mode[0] == 'W') {
+  } else if (routeOptions.mode[0] == 'W' == 0) {
     default_icon = CH_ICON_WALK;
   } else {
     default_icon = CH_ICON_RAIL;

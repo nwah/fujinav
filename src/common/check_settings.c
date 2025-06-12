@@ -11,7 +11,7 @@ void init_defaults()
 {
     strcpy(settings.server, "http://fuji.noahburney.net");
     strcpy(routeOptions.mode, MODE_DRIVING);
-    strcpy(routeOptions.country, "us");
+    strcpy(routeOptions.country, "ca");
     strcpy(routeOptions.units, "mi");
 }
 
