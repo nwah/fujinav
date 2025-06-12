@@ -65,7 +65,8 @@ void parse_geocode_response(uint8_t *num_results, struct Location *results[]) {
 }
 
 uint8_t api_geocode(char *query, struct Location *results[], uint8_t *num_results) {
-  uint8_t err = 0;
+  int err = 0;
+  uint8_t network_err = 0;
   uint8_t status;
   uint16_t bw;
   char *c;
@@ -78,27 +79,27 @@ uint8_t api_geocode(char *query, struct Location *results[], uint8_t *num_result
   memset(buf, 0, sizeof(buf));
 
   err = network_open(url, OPEN_MODE_HTTP_POST, OPEN_TRANS_LF);
-  // if (err) {
-  //   return err;
-  // }
+  if (err) {
+    return err;
+  }
 
   err = network_http_post(url, query);
-  // if (err) {
-  //   network_close(url);
-  //   return err;
-  // }
+  if (err) {
+    network_close(url);
+    return err;
+  }
 
-  network_status(url, &bw, &status, &err);
-  // if (err) {
-  //   network_close(url);
-  //   return err;
-  // }
+  err = network_status(url, &bw, &status, &network_err);
+  if (err) {
+    network_close(url);
+    return err;
+  }
 
   err = network_read(url, &buf, bw);
-  // if (err < 0) {
-  //   network_close(url);
-  //   return -err;
-  // }
+  if (err < 0) {
+    network_close(url);
+    return -err;
+  }
 
   network_close(url);
 
@@ -132,7 +133,8 @@ void parse_route_response() {
 }
 
 uint8_t api_route(char *fromLatLng, char *toLatLng, RouteOptions *options) {
-  uint8_t err = 0;
+  int err = 0;
+  uint8_t network_err = 0;
   uint8_t status;
   uint16_t bw;
   uint16_t to_read = 512;
@@ -154,22 +156,21 @@ uint8_t api_route(char *fromLatLng, char *toLatLng, RouteOptions *options) {
            toLatLng);
 
   err = network_open(url, OPEN_MODE_HTTP_POST, OPEN_TRANS_LF);
-  // if (err) {
-  //   return err;
-  // }
+  if (err) {
+    return err;
+  }
 
-  // printf("%s", reqBody);
   err = network_http_post(url, reqBody);
-  // if (err) {
-  //   network_close(url);
-  //   return err;
-  // }
+  if (err) {
+    network_close(url);
+    return err;
+  }
 
-  network_status(url, &bw, &status, &err);
-  // if (err) {
-  //   network_close(url);
-  //   return err;
-  // }
+  network_status(url, &bw, &status, &network_err);
+  if (err) {
+    network_close(url);
+    return err;
+  }
 
   while (bw > 0) {
     if (to_read > bw) {

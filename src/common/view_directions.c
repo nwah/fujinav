@@ -64,6 +64,7 @@ void view_directions(void) {
         case CH_CURS_DOWN:
         case 'k':
         case 'K':
+        case ' ':
           waiting = true;
           ui_screen_directions_scroll_down();
           break;
