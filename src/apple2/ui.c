@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <conio.h>
@@ -14,10 +15,14 @@
 #define TEXT_TOP 0x22
 #define TEXT_BOTTOM 0x23
 
+uint8_t first_visible_step = 0;
+uint8_t last_visible_step = 0;
+uint8_t last_printed_y = 0;
+
 void set_default_margins()
 {
   POKE(TEXT_LEFT, 2);
-  POKE(TEXT_WIDTH, 40);
+  POKE(TEXT_WIDTH, 38);
   POKE(TEXT_TOP, 0);
   POKE(TEXT_BOTTOM, 23);
 }
@@ -41,13 +46,21 @@ void full_screen_clear() {
   POKE(TEXT_BOTTOM, b);
 }
 
+void render_bottom_menu(uint8_t x, char *text)
+{
+  POKE(TEXT_LEFT, 0);
+  POKE(TEXT_WIDTH, 40);
+  revers(1);
+  cclearxy(0, 23, 40);
+  cputsxy(x, 23, text);
+  revers(0);
+  set_default_margins();
+}
+
 void ui_init(void)
 {
   clrscr();
   set_default_margins();
-  // Enable alternative charset
-  // TODO: Limit to machines that support it
-  POKE(0xC00F, 0);
 }
 
 void print_logo() {
@@ -64,6 +77,7 @@ void ui_screen_splash()
 void ui_screen_settings()
 {
   full_screen_clear();
+  set_default_margins();
   print_logo();
 
   ui_screen_settings_render_server();
@@ -72,19 +86,24 @@ void ui_screen_settings()
 
 void ui_screen_settings_menu_default()
 {
-  revers(1);
-  cclearxy(0, 23, 40);
-  cputsxy(9, 23, "ESC:Back  RETURN:Save");
-  revers(0);
+  render_bottom_menu(9, "ESC:Back  RETURN:Edit");
+}
+
+void ui_screen_settings_menu_editing()
+{
+  render_bottom_menu(9, "ESC:Cancel  RETURN:Save");
 }
 
 uint8_t ui_screen_settings_edit_server(char *result)
 {
   char tmp[128];
-  uint8_t err = readline(tmp);
+  uint8_t err;
+  gotoxy(0, 12);
+  err = readline(tmp);
   if (tmp[0] != '\0') {
     strcpy(result, tmp);
   }
+  cclearxy(0, 12, 38);
   return err;
 }
 
@@ -127,6 +146,7 @@ void ui_screen_settings_render_units()
 
 void ui_screen_settings_render_server()
 {
+  cclearxy(8, 10, 30);
   gotoxy(8, 10);
   printf(settings.server);
 }
@@ -142,12 +162,7 @@ void ui_screen_destination()
 
 void ui_screen_destination_menu_default()
 {
-  POKE(TEXT_LEFT, 0);
-  revers(1);
-  cclearxy(0, 23, 40);
-  cputsxy(5, 23, "ESC:Settings  RETURN:Continue");
-  revers(0);
-  POKE(TEXT_LEFT, 2);
+  render_bottom_menu(5, "ESC:Settings  RETURN:Continue");
 }
 
 void ui_screen_origin()
@@ -160,12 +175,7 @@ void ui_screen_origin()
 
 void ui_screen_origin_menu_default()
 {
-  POKE(TEXT_LEFT, 0);
-  revers(1);
-  cclearxy(0, 23, 40);
-  cputsxy(5, 23, "ESC:Back      RETURN:Continue");
-  revers(0);
-  POKE(TEXT_LEFT, 2);
+  render_bottom_menu(5, "ESC:Back      RETURN:Continue");
 }
 
 uint8_t ui_screen_location_input_query(char *query)
@@ -238,6 +248,7 @@ void ui_screen_directions()
 {
   POKE(TEXT_TOP, 0);
   POKE(TEXT_LEFT, 0);
+  POKE(TEXT_WIDTH, 40);
   full_screen_clear();
 
   revers(1);
@@ -263,6 +274,28 @@ void ui_screen_directions_show_routing()
   POKE(TEXT_TOP, 4);
 }
 
+uint8_t print_steps(uint8_t first, uint8_t max) {
+  char *instruction;
+  uint8_t i;
+  uint8_t step;
+  uint8_t height;
+  uint8_t y = 0;
+
+  // directions.num_steps
+  for (i = 0; i < max; i++) {
+    step = first + i;
+    instruction = directions.steps[step].instructions;
+    height = 2 + strlen(instruction) / 38;
+    y = wherey();
+    if (y + height > 18) {
+      break;
+    }
+    last_visible_step++;
+    printf("%s\n\n", instruction);
+    last_printed_y = wherey();
+  }
+}
+
 void ui_screen_directions_show_results()
 {
   uint8_t i;
@@ -281,10 +314,12 @@ void ui_screen_directions_show_results()
   POKE(TEXT_TOP, 4);
   POKE(TEXT_LEFT, 1);
   POKE(TEXT_WIDTH, 39);
+
+  first_visible_step = 0;
+  last_visible_step = 0;
   gotoxy(0,0);
-  for (i = 0; i < directions.num_steps; i++) {
-    printf("%s\n\n",directions.steps[i].instructions);
-  }
+  print_steps(0, directions.num_steps);
+
   POKE(TEXT_LEFT, 0);
   POKE(TEXT_WIDTH, 40);
 }
@@ -303,12 +338,29 @@ void ui_screen_directions_menu_default()
 
 void ui_screen_directions_scroll_up()
 {
+  POKE(TEXT_TOP, 4);
+  POKE(TEXT_LEFT, 1);
+  POKE(TEXT_WIDTH, 39);
 
+  if (first_visible_step > 0) {
+    gotoxy(0, 0);
+    clrscr();
+    first_visible_step--;
+    print_steps(first_visible_step, directions.num_steps);
+  }
 }
 
 void ui_screen_directions_scroll_down()
 {
+  POKE(TEXT_TOP, 4);
+  POKE(TEXT_LEFT, 1);
+  POKE(TEXT_WIDTH, 39);
 
+  gotoxy(0, last_printed_y);
+  if (last_visible_step < directions.num_steps-1) {
+    first_visible_step++;
+    print_steps(last_visible_step + 1, 1);
+  }
 }
 
 

@@ -3,10 +3,16 @@
 #include <stdbool.h>
 #include <conio.h>
 #include <fujinet-fuji.h>
+
 #include "edit_settings.h"
 #include "globals.h"
 #include "typedefs.h"
 #include "ui.h"
+
+// TODO: This seems dumb
+#ifndef CH_TAB
+#define CH_TAB 0x09
+#endif
 
 #define DONE 0
 #define SERVER 1
@@ -15,16 +21,33 @@
 uint8_t settings_state = SERVER;
 
 void edit_server() {
+  char c;
   bool ok;
   uint8_t err;
 
+  ui_screen_settings_menu_default();
+
   ui_screen_settings_focus_server();
 
-  // cgetc();
-  // settings_state = UNITS;
-  // return;
+  while (c != CH_ENTER) {
+    while (!kbhit());
+    c = cgetc();
+
+    if (c == CH_ESC) {
+      settings_state = DONE;
+      return;
+    }
+    else if (c == CH_TAB) {
+      settings_state = UNITS;
+      return;
+    }
+  }
+
+  ui_screen_settings_menu_editing();
 
   err = ui_screen_settings_edit_server(settings.server);
+
+  ui_screen_settings_menu_default();
 
   if (err == ERR_ABORTED) {
     settings_state = DONE;
@@ -39,6 +62,8 @@ void edit_server() {
     return;
   }
 
+  ui_screen_settings_render_server();
+
   settings_state = UNITS;
 }
 
@@ -48,12 +73,17 @@ void edit_units() {
   char old_units[3];
   char c;
 
+  ui_screen_settings_menu_editing();
+
   strcpy(old_units, routeOptions.units);
   ui_screen_settings_focus_units();
 
   while (1) {
     c = cgetc();
     switch (c) {
+    case CH_TAB:
+      settings_state = SERVER;
+      return;
     case CH_ESC:
       settings_state = SERVER;
       strcpy(routeOptions.units, old_units);

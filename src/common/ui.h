@@ -10,6 +10,7 @@ void ui_screen_splash();
 
 void ui_screen_settings();
 void ui_screen_settings_menu_default();
+void ui_screen_settings_menu_editing();
 uint8_t ui_screen_settings_edit_server(char *query);
 void ui_screen_settings_show_error(char *msg);
 void ui_screen_settings_focus_none();
