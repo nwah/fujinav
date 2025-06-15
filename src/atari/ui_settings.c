@@ -50,7 +50,7 @@ void ui_screen_settings() {
 
 void ui_screen_settings_menu_default() {
   screen_clear_line(19);
-  screen_puts_center(19, CH_KEY_ESC "Cancel " CH_KEY_RETURN "Save");
+  screen_puts_center(19, CH_KEY_ESC "Cancel " CH_KEY_RETURN "Edit");
 }
 
 void ui_screen_settings_menu_editing() {
