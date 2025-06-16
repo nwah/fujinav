@@ -80,6 +80,8 @@ void ui_screen_settings()
   set_default_margins();
   print_logo();
 
+  cputsxy(12, 6, APP_VERSION);
+
   ui_screen_settings_render_server();
   ui_screen_settings_render_units();
 }
@@ -150,7 +152,6 @@ void ui_screen_settings_render_server()
   gotoxy(8, 10);
   printf(settings.server);
 }
-
 
 void ui_screen_destination()
 {
@@ -274,25 +275,37 @@ void ui_screen_directions_show_routing()
   POKE(TEXT_TOP, 4);
 }
 
-uint8_t print_steps(uint8_t first, uint8_t max) {
-  char *instruction;
-  uint8_t i;
-  uint8_t step;
-  uint8_t height;
-  uint8_t y = 0;
+void print_next_step() {
+  if (last_visible_step == directions.num_steps) {
+    return;
+  }
 
-  // directions.num_steps
-  for (i = 0; i < max; i++) {
-    step = first + i;
-    instruction = directions.steps[step].instructions;
-    height = 2 + strlen(instruction) / 38;
-    y = wherey();
-    if (y + height > 18) {
-      break;
-    }
-    last_visible_step++;
-    printf("%s\n\n", instruction);
-    last_printed_y = wherey();
+  POKE(TEXT_TOP, 4);
+  POKE(TEXT_LEFT, 1);
+  POKE(TEXT_WIDTH, 39);
+
+  gotoxy(0, last_printed_y);
+  printf("%s\n\n", directions.steps[last_visible_step].instructions);
+  last_visible_step++;
+  last_printed_y = wherey();
+}
+
+void print_steps() {
+  uint8_t i;
+
+  last_visible_step = 0;
+  last_printed_y = 0;
+
+  POKE(TEXT_TOP, 4);
+  POKE(TEXT_LEFT, 1);
+  POKE(TEXT_WIDTH, 39);
+
+  gotoxy(0, 0);
+  clrscr();
+
+  for (i = 0; i < directions.num_steps; i++) {
+    print_next_step();
+    if (last_printed_y > 14) break;
   }
 }
 
@@ -311,56 +324,33 @@ void ui_screen_directions_show_results()
   cputs(directions.distance);
   revers(0);
 
-  POKE(TEXT_TOP, 4);
-  POKE(TEXT_LEFT, 1);
-  POKE(TEXT_WIDTH, 39);
-
-  first_visible_step = 0;
-  last_visible_step = 0;
-  gotoxy(0,0);
-  print_steps(0, directions.num_steps);
-
-  POKE(TEXT_LEFT, 0);
-  POKE(TEXT_WIDTH, 40);
+  print_steps();
 }
 
 void ui_screen_directions_menu_default()
 {
-  POKE(TEXT_BOTTOM, 23);
   POKE(TEXT_TOP, 0);
+  POKE(TEXT_BOTTOM, 23);
+  POKE(TEXT_LEFT, 0);
+  POKE(TEXT_WIDTH, 40);
   revers(1);
   cclearxy(0, 23, 40);
   cputsxy(2, 23, "ESC:Back  C/T/W/B:Mode  UpDn:Scroll");
   revers(0);
   POKE(TEXT_TOP, 4);
   POKE(TEXT_BOTTOM, 21);
+  POKE(TEXT_LEFT, 1);
+  POKE(TEXT_WIDTH, 39);
 }
 
 void ui_screen_directions_scroll_up()
 {
-  POKE(TEXT_TOP, 4);
-  POKE(TEXT_LEFT, 1);
-  POKE(TEXT_WIDTH, 39);
-
-  if (first_visible_step > 0) {
-    gotoxy(0, 0);
-    clrscr();
-    first_visible_step--;
-    print_steps(first_visible_step, directions.num_steps);
-  }
+  print_steps();
 }
 
 void ui_screen_directions_scroll_down()
 {
-  POKE(TEXT_TOP, 4);
-  POKE(TEXT_LEFT, 1);
-  POKE(TEXT_WIDTH, 39);
-
-  gotoxy(0, last_printed_y);
-  if (last_visible_step < directions.num_steps-1) {
-    first_visible_step++;
-    print_steps(last_visible_step + 1, 1);
-  }
+  print_next_step();
 }
 
 

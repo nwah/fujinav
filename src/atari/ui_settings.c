@@ -42,7 +42,7 @@ void ui_screen_settings() {
   set_dlist_dli_logo_with_text();
 
   screen_clear();
-  screen_puts_center(2, "v0.0.1-alpha1");
+  screen_puts_center(2, APP_VERSION);
 
   ui_screen_settings_render_units();
   ui_screen_settings_render_server();
